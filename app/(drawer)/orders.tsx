@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   TextInput,
   Modal,
   Alert,
@@ -16,8 +16,9 @@ import { DrawerActions } from '@react-navigation/native';
 import { useOrders } from '@/context/OrderContext';
 import { OrderCard } from '@/components/OrderCard';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { MENU_ITEMS } from '@/data/menu';
-import { OrderItem } from '@/types/Order';
+// import { MENU_ITEMS } from '@/data/menu';
+import { MenuItem, OrderItem } from '@/types/Order';
+import { fetchMenu } from '@/data/menu';
 
 export default function OrdersScreen() {
   const navigation = useNavigation();
@@ -25,14 +26,20 @@ export default function OrdersScreen() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [selectedItems, setSelectedItems] = useState<OrderItem[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
 
-  const addToOrder = (menuItem: typeof MENU_ITEMS[0]) => {
+  useEffect(() => {
+    fetchMenu().then(setMenuItems);
+  }, []);
+
+
+  const addToOrder = (menuItem: typeof menuItems[0]) => {
     const existingItem = selectedItems.find(item => item.id === menuItem.id);
-    
+
     if (existingItem) {
-      setSelectedItems(prev => 
-        prev.map(item => 
-          item.id === menuItem.id 
+      setSelectedItems(prev =>
+        prev.map(item =>
+          item.id === menuItem.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         )
@@ -51,8 +58,8 @@ export default function OrdersScreen() {
     setSelectedItems(prev => {
       const existingItem = prev.find(item => item.id === itemId);
       if (existingItem && existingItem.quantity > 1) {
-        return prev.map(item => 
-          item.id === itemId 
+        return prev.map(item =>
+          item.id === itemId
             ? { ...item, quantity: item.quantity - 1 }
             : item
         );
@@ -71,7 +78,7 @@ export default function OrdersScreen() {
       Alert.alert('Error', 'Por favor ingresa el nombre del cliente');
       return;
     }
-    
+
     if (selectedItems.length === 0) {
       Alert.alert('Error', 'Por favor selecciona al menos un producto');
       return;
@@ -90,13 +97,13 @@ export default function OrdersScreen() {
       });
   };
 
-  const categorizedItems = MENU_ITEMS.reduce((acc, item) => {
+  const categorizedItems = menuItems.reduce((acc, item) => {
     if (!acc[item.category]) {
       acc[item.category] = [];
     }
     acc[item.category].push(item);
     return acc;
-  }, {} as Record<string, typeof MENU_ITEMS>);
+  }, {} as Record<string, typeof menuItems>);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -119,24 +126,24 @@ export default function OrdersScreen() {
       {isLoading ? (
         <LoadingSpinner message="Cargando órdenes..." />
       ) : (
-      <ScrollView style={styles.ordersList}>
-        {orders.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No hay órdenes activas</Text>
-            <Text style={styles.emptySubtext}>Las nuevas órdenes aparecerán aquí</Text>
-          </View>
-        ) : (
-          orders.map(order => (
-            <OrderCard
-              key={order.id}
-              order={order}
-              onStatusChange={updateOrderStatus}
-              onCompleteOrder={completeOrder}
-              showActions={true}
-            />
-          ))
-        )}
-      </ScrollView>
+        <ScrollView style={styles.ordersList}>
+          {orders.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No hay órdenes activas</Text>
+              <Text style={styles.emptySubtext}>Las nuevas órdenes aparecerán aquí</Text>
+            </View>
+          ) : (
+            orders.map(order => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                onStatusChange={updateOrderStatus}
+                onCompleteOrder={completeOrder}
+                showActions={true}
+              />
+            ))
+          )}
+        </ScrollView>
       )}
 
       <Modal
@@ -173,7 +180,7 @@ export default function OrdersScreen() {
                 {items.map(item => {
                   const selectedItem = selectedItems.find(selected => selected.id === item.id);
                   const quantity = selectedItem?.quantity || 0;
-                  
+
                   return (
                     <View key={item.id} style={styles.menuItem}>
                       <View style={styles.itemInfo}>
@@ -208,7 +215,7 @@ export default function OrdersScreen() {
               <ShoppingCart size={20} color="#DC2626" />
               <Text style={styles.summaryTitle}>Resumen del Pedido</Text>
             </View>
-            
+
             {selectedItems.length > 0 ? (
               <>
                 {selectedItems.map(item => (

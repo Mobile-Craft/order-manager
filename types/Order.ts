@@ -6,7 +6,8 @@ export interface OrderItem {
 }
 
 export interface Order {
-  id: string;
+  id: number; // sigue existiendo como ID interno
+  order_code: string; // este es el nuevo campo visible tipo ORD-001
   customer_name: string;
   items: OrderItem[];
   total: number;

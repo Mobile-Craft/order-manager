@@ -11,7 +11,7 @@ interface OrderCardProps {
 
 const STATUS_COLORS = {
   'Pendiente': '#FEF3C7',
-  'En proceso': '#DBEAFE', 
+  'En proceso': '#DBEAFE',
   'Terminada': '#D1FAE5',
   'Entregada': '#F3F4F6',
 };
@@ -25,9 +25,9 @@ const STATUS_TEXT_COLORS = {
 
 export function OrderCard({ order, showActions = true, onStatusChange, onCompleteOrder }: OrderCardProps) {
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('es-DO', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(dateString).toLocaleTimeString('es-DO', {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -64,12 +64,12 @@ export function OrderCard({ order, showActions = true, onStatusChange, onComplet
   return (
     <View style={[styles.card, { backgroundColor: STATUS_COLORS[order.status] }]}>
       <View style={styles.header}>
-        <Text style={styles.orderId}>{order.id}</Text>
-        <Text style={styles.time}>{formatTime(order.createdAt)}</Text>
+        <Text style={styles.orderId}>{order.order_code}</Text>
+        <Text style={styles.time}>{formatTime(order.created_at)}</Text>
       </View>
-      
-      <Text style={styles.customerName}>{order.customerName}</Text>
-      
+
+      <Text style={styles.customerName}>{order.customer_name}</Text>
+
       <View style={styles.itemsList}>
         {order.items.map((item, index) => (
           <View key={index} style={styles.item}>
@@ -80,7 +80,7 @@ export function OrderCard({ order, showActions = true, onStatusChange, onComplet
           </View>
         ))}
       </View>
-      
+
       <View style={styles.footer}>
         <Text style={styles.total}>Total: RD${order.total}</Text>
         <View style={[styles.statusBadge, { backgroundColor: STATUS_TEXT_COLORS[order.status] }]}>
@@ -88,10 +88,10 @@ export function OrderCard({ order, showActions = true, onStatusChange, onComplet
         </View>
       </View>
 
-      {order.paymentMethod && (
-        <Text style={styles.paymentMethod}>Pago: {order.paymentMethod}</Text>
+      {order.payment_method && (
+        <Text style={styles.paymentMethod}>Pago: {order.payment_method}</Text>
       )}
-      
+
       {showActions && (
         <View style={styles.actions}>
           {nextStatus && onStatusChange && (
@@ -102,7 +102,7 @@ export function OrderCard({ order, showActions = true, onStatusChange, onComplet
               <Text style={styles.actionButtonText}>Marcar como {nextStatus}</Text>
             </TouchableOpacity>
           )}
-          
+
           {order.status === 'Terminada' && onCompleteOrder && (
             <View style={styles.completeActions}>
               <TouchableOpacity

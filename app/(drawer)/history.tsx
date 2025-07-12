@@ -1,8 +1,8 @@
 import React from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  StyleSheet,
   ScrollView,
   SafeAreaView,
   TouchableOpacity,
@@ -57,7 +57,7 @@ export default function HistoryScreen() {
 
   // Agrupar órdenes por fecha
   const ordersByDate = deliveredOrders.reduce((acc, order) => {
-    const date = formatDate(order.deliveredAt || order.createdAt);
+    const date = formatDate(order.delivered_at || order.created_at);
     if (!acc[date]) {
       acc[date] = [];
     }
@@ -97,55 +97,55 @@ export default function HistoryScreen() {
       {isLoading ? (
         <LoadingSpinner message="Cargando historial..." />
       ) : (
-      <ScrollView style={styles.ordersList}>
-        {deliveredOrders.length === 0 ? (
-          <View style={styles.emptyState}>
-            <History size={64} color="#D1D5DB" />
-            <Text style={styles.emptyTitle}>No hay órdenes en el historial</Text>
-            <Text style={styles.emptySubtitle}>
-              Las órdenes entregadas aparecerán aquí
-            </Text>
-          </View>
-        ) : (
-          Object.entries(ordersByDate)
-            .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
-            .map(([date, orders]) => (
-              <View key={date} style={styles.dateSection}>
-                <Text style={styles.dateTitle}>{date}</Text>
-                {orders
-                  .sort((a, b) => new Date(b.deliveredAt || b.createdAt).getTime() - new Date(a.deliveredAt || a.createdAt).getTime())
-                  .map(order => (
-                    <View key={order.id} style={styles.historyOrderCard}>
-                      <View style={styles.orderHeader}>
-                        <Text style={styles.orderId}>{order.id}</Text>
-                        <Text style={styles.orderTime}>{formatTime(order.deliveredAt || order.createdAt)}</Text>
-                      </View>
-                      
-                      <Text style={styles.customerName}>{order.customerName}</Text>
-                      
-                      <View style={styles.itemsList}>
-                        {order.items.map((item, index) => (
-                          <View key={index} style={styles.item}>
-                            <Text style={styles.itemText}>
-                              {item.quantity}x {item.name}
-                            </Text>
-                            <Text style={styles.itemPrice}>RD${item.price * item.quantity}</Text>
+        <ScrollView style={styles.ordersList}>
+          {deliveredOrders.length === 0 ? (
+            <View style={styles.emptyState}>
+              <History size={64} color="#D1D5DB" />
+              <Text style={styles.emptyTitle}>No hay órdenes en el historial</Text>
+              <Text style={styles.emptySubtitle}>
+                Las órdenes entregadas aparecerán aquí
+              </Text>
+            </View>
+          ) : (
+            Object.entries(ordersByDate)
+              .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
+              .map(([date, orders]) => (
+                <View key={date} style={styles.dateSection}>
+                  <Text style={styles.dateTitle}>{date}</Text>
+                  {orders
+                    .sort((a, b) => new Date(b.delivered_at || b.created_at).getTime() - new Date(a.delivered_at || a.created_at).getTime())
+                    .map(order => (
+                      <View key={order.id} style={styles.historyOrderCard}>
+                        <View style={styles.orderHeader}>
+                          <Text style={styles.orderId}>{order.id}</Text>
+                          <Text style={styles.orderTime}>{formatTime(order.delivered_at || order.created_at)}</Text>
+                        </View>
+
+                        <Text style={styles.customerName}>{order.customer_name}</Text>
+
+                        <View style={styles.itemsList}>
+                          {order.items.map((item, index) => (
+                            <View key={index} style={styles.item}>
+                              <Text style={styles.itemText}>
+                                {item.quantity}x {item.name}
+                              </Text>
+                              <Text style={styles.itemPrice}>RD${item.price * item.quantity}</Text>
+                            </View>
+                          ))}
+                        </View>
+
+                        <View style={styles.orderFooter}>
+                          <Text style={styles.total}>Total: RD${order.total}</Text>
+                          <View style={styles.paymentBadge}>
+                            <Text style={styles.paymentText}>{order.payment_method}</Text>
                           </View>
-                        ))}
-                      </View>
-                      
-                      <View style={styles.orderFooter}>
-                        <Text style={styles.total}>Total: RD${order.total}</Text>
-                        <View style={styles.paymentBadge}>
-                          <Text style={styles.paymentText}>{order.paymentMethod}</Text>
                         </View>
                       </View>
-                    </View>
-                  ))}
-              </View>
-            ))
-        )}
-      </ScrollView>
+                    ))}
+                </View>
+              ))
+          )}
+        </ScrollView>
       )}
     </SafeAreaView>
   );

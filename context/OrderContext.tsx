@@ -14,7 +14,7 @@ interface OrderContextType {
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
-type OrderAction = 
+type OrderAction =
   | { type: 'SET_ORDERS'; payload: { activeOrders: Order[]; deliveredOrders: Order[] } }
   | { type: 'ADD_ORDER'; payload: Order }
   | { type: 'UPDATE_ORDER'; payload: Order }
@@ -35,34 +35,34 @@ function orderReducer(state: OrderState, action: OrderAction): OrderState {
         activeOrders: action.payload.activeOrders,
         deliveredOrders: action.payload.deliveredOrders,
       };
-    
+
     case 'ADD_ORDER':
       return {
         ...state,
         activeOrders: [action.payload, ...state.activeOrders],
       };
-    
+
     case 'UPDATE_ORDER':
       return {
         ...state,
-        activeOrders: state.activeOrders.map(order => 
+        activeOrders: state.activeOrders.map(order =>
           order.id === action.payload.id ? action.payload : order
         ),
       };
-    
+
     case 'MOVE_TO_DELIVERED':
       return {
         ...state,
         activeOrders: state.activeOrders.filter(order => order.id !== action.payload.orderId),
         deliveredOrders: [action.payload.updatedOrder, ...state.deliveredOrders],
       };
-    
+
     case 'SET_LOADING':
       return {
         ...state,
         isLoading: action.payload,
       };
-    
+
     default:
       return state;
   }
@@ -106,7 +106,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const loadOrders = async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      
+
       // Cargar órdenes activas (no entregadas)
       const { data: activeOrders, error: activeError } = await supabase
         .from('orders')
@@ -142,7 +142,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const addOrder = async (customerName: string, items: OrderItem[]) => {
     try {
       const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      
+
       const newOrder: Omit<Order, 'id'> = {
         customer_name: customerName,
         items,
@@ -150,6 +150,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         status: 'Pendiente',
         payment_method: null,
         created_at: new Date().toISOString(),
+        order_code: ''
       };
 
       const { data, error } = await supabase
@@ -205,16 +206,16 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
   const getSalesData = (): SalesData => {
     const today = new Date().toDateString();
-    const todayOrders = state.deliveredOrders.filter(order => 
-      order.deliveredAt && new Date(order.deliveredAt).toDateString() === today
+    const todayOrders = state.deliveredOrders.filter(order =>
+      order.delivered_at && new Date(order.delivered_at).toDateString() === today
     );
 
     const cashTotal = state.deliveredOrders
-      .filter(order => order.paymentMethod === 'Efectivo')
+      .filter(order => order.payment_method === 'Efectivo')
       .reduce((sum, order) => sum + order.total, 0);
 
     const transferTotal = state.deliveredOrders
-      .filter(order => order.paymentMethod === 'Transferencia')
+      .filter(order => order.payment_method === 'Transferencia')
       .reduce((sum, order) => sum + order.total, 0);
 
     const revenueToday = todayOrders.reduce((sum, order) => sum + order.total, 0);
