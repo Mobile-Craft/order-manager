@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { Order, OrderItem, SalesData } from '@/types/Order';
 import { supabase } from '@/lib/supabase';
+import { Audio } from 'expo-av';
+
 
 interface OrderContextType {
   orders: Order[];
@@ -68,6 +70,20 @@ function orderReducer(state: OrderState, action: OrderAction): OrderState {
   }
 }
 
+let notificationSound: Audio.Sound | null = null;
+
+async function loadNotificationSound() {
+  try {
+    const { sound } = await Audio.Sound.createAsync(
+      require('@/assets/sounds/shop.mp3') // ajusta la ruta
+    );
+    notificationSound = sound;
+  } catch (error) {
+    console.error('Error loading sound:', error);
+  }
+}
+
+
 export function OrderProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(orderReducer, {
     activeOrders: [],
@@ -77,6 +93,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
   // Cargar órdenes iniciales
   useEffect(() => {
+    loadNotificationSound();
     loadOrders();
   }, []);
 
@@ -93,6 +110,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         },
         (payload) => {
           console.log('Order change received:', payload);
+          playNotificationSound();
           loadOrders(); // Recargar todas las órdenes cuando hay cambios
         }
       )
@@ -103,9 +121,20 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  async function playNotificationSound() {
+    try {
+      if (notificationSound) {
+        await notificationSound.replayAsync();
+      }
+    } catch (error) {
+      console.error('Error playing sound:', error);
+    }
+  }
+
+
   const loadOrders = async () => {
     try {
-      dispatch({ type: 'SET_LOADING', payload: true });
+      // dispatch({ type: 'SET_LOADING', payload: true });
 
       // Cargar órdenes activas (no entregadas)
       const { data: activeOrders, error: activeError } = await supabase

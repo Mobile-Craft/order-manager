@@ -117,7 +117,7 @@ export default function HistoryScreen() {
                     .map(order => (
                       <View key={order.id} style={styles.historyOrderCard}>
                         <View style={styles.orderHeader}>
-                          <Text style={styles.orderId}>{order.id}</Text>
+                          <Text style={styles.orderId}>{order.order_code}</Text>
                           <Text style={styles.orderTime}>{formatTime(order.delivered_at || order.created_at)}</Text>
                         </View>
 
