@@ -141,7 +141,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         .from('orders')
         .select('*')
         .neq('status', 'Entregada')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (activeError) throw activeError;
 

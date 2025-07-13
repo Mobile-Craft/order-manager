@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Order } from '@/types/Order';
+import { theme } from '@/lib/theme';
 
 interface OrderCardProps {
   order: Order;
@@ -24,6 +25,24 @@ const STATUS_TEXT_COLORS = {
 };
 
 export function OrderCard({ order, showActions = true, onStatusChange, onCompleteOrder }: OrderCardProps) {
+  const [elapsedTime, setElapsedTime] = useState<string>('00:00');
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const createdTime = new Date(order.created_at).getTime();
+      const now = new Date().getTime();
+      const diff = Math.floor((now - createdTime) / 1000);
+
+      const minutes = Math.floor(diff / 60).toString().padStart(2, '0');
+      const seconds = (diff % 60).toString().padStart(2, '0');
+
+      setElapsedTime(`${minutes}:${seconds}`);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [order.created_at]);
+
+
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString('es-DO', {
       hour: '2-digit',
@@ -65,6 +84,7 @@ export function OrderCard({ order, showActions = true, onStatusChange, onComplet
     <View style={[styles.card, { backgroundColor: STATUS_COLORS[order.status] }]}>
       <View style={styles.header}>
         <Text style={styles.orderId}>{order.order_code}</Text>
+        <Text style={styles.time}>{elapsedTime}</Text>
         <Text style={styles.time}>{formatTime(order.created_at)}</Text>
       </View>
 
@@ -184,7 +204,7 @@ const styles = StyleSheet.create({
   total: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#DC2626',
+    color: theme.colors.accent,
   },
   statusBadge: {
     paddingHorizontal: 12,

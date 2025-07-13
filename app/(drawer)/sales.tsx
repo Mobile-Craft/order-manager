@@ -1,8 +1,8 @@
 import React from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  StyleSheet,
   ScrollView,
   SafeAreaView,
   TouchableOpacity,
@@ -12,8 +12,20 @@ import { useNavigation } from '@react-navigation/native';
 import { DrawerActions } from '@react-navigation/native';
 import { useOrders } from '@/context/OrderContext';
 import { useAuth } from '@/context/AuthContext';
+import { Image } from 'react-native';
+import { useAssets } from 'expo-asset';
+import { theme } from '@/lib/theme';
+
+
+
 
 export default function SalesScreen() {
+  const [assets, error] = useAssets([
+    require('@/assets/images/financialIcon.png'),
+    require('@/assets/images/creditCardIcon.png'),
+    require('@/assets/images/calendarIcon.png'),
+    require('@/assets/images/statistics.png'),
+  ]);
   const navigation = useNavigation();
   const { getSalesData } = useOrders();
   const { isAdmin } = useAuth();
@@ -40,13 +52,13 @@ export default function SalesScreen() {
 
   const salesData = getSalesData();
 
-  const StatCard = ({ 
-    icon: Icon, 
-    title, 
-    value, 
-    subtitle, 
+  const StatCard = ({
+    icon: Icon,
+    title,
+    value,
+    subtitle,
     color = '#DC2626',
-    backgroundColor = '#FEE2E2' 
+    backgroundColor = '#FEE2E2'
   }: {
     icon: any;
     title: string;
@@ -72,10 +84,10 @@ export default function SalesScreen() {
           style={styles.menuButton}
           onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
         >
-          <Menu size={24} color="#DC2626" />
+          <Menu size={24} color={theme.colors.primaryDark} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <DollarSign size={28} color="#DC2626" />
+          <DollarSign size={28} color={theme.colors.primaryDark} />
           <Text style={styles.title}>Ventas</Text>
         </View>
         <View style={styles.placeholder} />
@@ -83,8 +95,17 @@ export default function SalesScreen() {
 
       <ScrollView style={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📊 Resumen General</Text>
-          
+          <View style={styles.statSubTitleContainer}>
+
+            {assets && assets[0] && (
+              <Image
+                source={{ uri: assets[0].uri }}
+                style={{ width: 24, height: 24 }}
+                resizeMode="contain"
+              />
+            )}
+            <Text style={styles.sectionTitle}>Resumen General</Text>
+          </View>
           <View style={styles.statsGrid}>
             <StatCard
               icon={TrendingUp}
@@ -94,7 +115,7 @@ export default function SalesScreen() {
               color="#059669"
               backgroundColor="#ECFDF5"
             />
-            
+
             <StatCard
               icon={DollarSign}
               title="Ingresos Totales"
@@ -107,8 +128,17 @@ export default function SalesScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>💳 Por Método de Pago</Text>
-          
+          <View style={styles.statSubTitleContainer}>
+            {assets && assets[1] && (
+              <Image
+                source={{ uri: assets[1].uri }}
+                style={{ width: 24, height: 24 }}
+                resizeMode="contain"
+              />
+            )}
+            <Text style={styles.sectionTitle}>Por Método de Pago</Text>
+          </View>
+
           <View style={styles.statsGrid}>
             <StatCard
               icon={Banknote}
@@ -118,7 +148,7 @@ export default function SalesScreen() {
               color="#F59E0B"
               backgroundColor="#FEF3C7"
             />
-            
+
             <StatCard
               icon={CreditCard}
               title="Transferencia"
@@ -131,8 +161,16 @@ export default function SalesScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📅 Hoy</Text>
-          
+          <View style={styles.statSubTitleContainer}>
+            {assets && assets[2] && (
+              <Image
+                source={{ uri: assets[2].uri }}
+                style={{ width: 24, height: 24 }}
+                resizeMode="contain"
+              />
+            )}
+            <Text style={styles.sectionTitle}>Hoy</Text>
+          </View>
           <View style={styles.statsGrid}>
             <StatCard
               icon={Calendar}
@@ -142,7 +180,7 @@ export default function SalesScreen() {
               color="#8B5CF6"
               backgroundColor="#F3E8FF"
             />
-            
+
             <StatCard
               icon={TrendingUp}
               title="Ingresos Hoy"
@@ -156,8 +194,17 @@ export default function SalesScreen() {
 
         {salesData.totalOrders > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📈 Estadísticas</Text>
-            
+            <View style={styles.statSubTitleContainer}>
+              {assets && assets[3] && (
+                <Image
+                  source={{ uri: assets[3].uri }}
+                  style={{ width: 24, height: 24 }}
+                  resizeMode="contain"
+                />
+              )}
+              <Text style={styles.sectionTitle}>Estadísticas</Text>
+            </View>
+
             <View style={styles.analyticsCard}>
               <View style={styles.analyticsRow}>
                 <Text style={styles.analyticsLabel}>Promedio por orden:</Text>
@@ -165,14 +212,14 @@ export default function SalesScreen() {
                   RD${Math.round(salesData.totalRevenue / salesData.totalOrders)}
                 </Text>
               </View>
-              
+
               <View style={styles.analyticsRow}>
                 <Text style={styles.analyticsLabel}>Método más usado:</Text>
                 <Text style={styles.analyticsValue}>
                   {salesData.cashTotal > salesData.transferTotal ? 'Efectivo' : 'Transferencia'}
                 </Text>
               </View>
-              
+
               {salesData.ordersToday > 0 && (
                 <View style={styles.analyticsRow}>
                   <Text style={styles.analyticsLabel}>Promedio hoy:</Text>
@@ -214,7 +261,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#DC2626',
+    color: theme.colors.primaryDark,
   },
   placeholder: {
     width: 40,
@@ -240,7 +287,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#1F2937',
-    marginBottom: 16,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -265,6 +311,12 @@ const styles = StyleSheet.create({
   statTitle: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  statSubTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+    marginBottom: 18,
   },
   statValue: {
     fontSize: 24,

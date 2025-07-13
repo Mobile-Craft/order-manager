@@ -3,9 +3,15 @@ import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-na
 import { DrawerContentScrollView, DrawerContentComponentProps } from '@react-navigation/drawer';
 import { ShoppingCart, History, DollarSign, User, LogOut, ChefHat } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
+import { theme } from '@/lib/theme';
+import { useAssets } from 'expo-asset';
+import { Image } from 'react-native';
 
 export function CustomDrawerContent(props: DrawerContentComponentProps) {
   const { user, logout, isAdmin } = useAuth();
+  const [assets, error] = useAssets([
+    require('@/assets/images/logo.png'),
+  ]);
 
   const menuItems = [
     {
@@ -38,14 +44,20 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
     props.navigation.navigate(routeName);
   };
 
+
+
   return (
     <SafeAreaView style={styles.container}>
       <DrawerContentScrollView {...props} contentContainerStyle={styles.scrollContainer}>
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>🍔</Text>
-          </View>
+          {assets && assets[0] && (
+            <Image
+              source={{ uri: assets[0].uri }}
+              style={{ width: 60, height: 60, borderRadius: 30, borderColor: 'white', borderWidth: 1 }}
+              resizeMode="contain"
+            />
+          )}
           <Text style={styles.title}>Crushed Burger</Text>
           <Text style={styles.subtitle}>Sistema de Pedidos</Text>
         </View>
@@ -53,7 +65,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
         {/* User Info */}
         <View style={styles.userInfo}>
           <View style={styles.userIcon}>
-            <User size={24} color="#DC2626" />
+            <User size={24} color={theme.colors.primaryDark} />
           </View>
           <View>
             <Text style={styles.userName}>{user?.name}</Text>
@@ -65,7 +77,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
         <View style={styles.menuContainer}>
           {menuItems.map((item) => {
             if (item.adminOnly && !isAdmin) return null;
-            
+
             return (
               <TouchableOpacity
                 key={item.route}
@@ -83,7 +95,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
       {/* Footer */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-          <LogOut size={20} color="#DC2626" />
+          <LogOut size={20} color={theme.colors.primaryDark} />
           <Text style={styles.logoutText}>Cerrar Sesión</Text>
         </TouchableOpacity>
       </View>
@@ -101,17 +113,9 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-    backgroundColor: '#DC2626',
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
-  },
-  logoContainer: {
-    width: 60,
-    height: 60,
-    backgroundColor: 'white',
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
+    borderRadius: 20
   },
   logoText: {
     fontSize: 30,
@@ -119,12 +123,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 4,
+    marginVertical: 4,
+    color: theme.colors.background,
+
   },
   subtitle: {
     fontSize: 14,
-    color: '#FEE2E2',
+    color: theme.colors.background,
   },
   userInfo: {
     flexDirection: 'row',
@@ -143,7 +148,7 @@ const styles = StyleSheet.create({
   userIcon: {
     width: 40,
     height: 40,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: '#DBEAFE',
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
@@ -184,6 +189,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     padding: 16,
+    marginBottom: 8,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
   },
@@ -193,13 +199,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: '#DBEAFE',
     borderRadius: 8,
   },
   logoutText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#DC2626',
+    color: theme.colors.primaryDark,
     marginLeft: 8,
   },
 });

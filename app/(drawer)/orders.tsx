@@ -16,9 +16,9 @@ import { DrawerActions } from '@react-navigation/native';
 import { useOrders } from '@/context/OrderContext';
 import { OrderCard } from '@/components/OrderCard';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-// import { MENU_ITEMS } from '@/data/menu';
 import { MenuItem, OrderItem } from '@/types/Order';
 import { fetchMenu } from '@/data/menu';
+import { theme } from '@/lib/theme';
 
 export default function OrdersScreen() {
   const navigation = useNavigation();
@@ -112,7 +112,7 @@ export default function OrdersScreen() {
           style={styles.menuButton}
           onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
         >
-          <Menu size={24} color="#DC2626" />
+          <Menu size={24} color={theme.colors.primaryDark} />
         </TouchableOpacity>
         <Text style={styles.title}>Pedidos Actuales</Text>
         <TouchableOpacity
@@ -168,6 +168,7 @@ export default function OrdersScreen() {
 
           <TextInput
             style={styles.customerInput}
+            placeholderTextColor={'#D1D5DB'}
             placeholder="Nombre del cliente"
             value={customerName}
             onChangeText={setCustomerName}
@@ -200,7 +201,7 @@ export default function OrdersScreen() {
                           style={styles.quantityButton}
                           onPress={() => addToOrder(item)}
                         >
-                          <Plus size={16} color="#DC2626" />
+                          <Plus size={16} color={theme.colors.primaryDark} />
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -268,12 +269,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#DC2626',
+    color: theme.colors.primaryDark,
     flex: 1,
     textAlign: 'center',
   },
   createButton: {
-    backgroundColor: '#DC2626',
+    backgroundColor: theme.colors.primaryDark,
     padding: 12,
     borderRadius: 8,
   },
@@ -319,7 +320,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   cancelButtonText: {
-    color: '#DC2626',
+    color: theme.colors.primary,
     fontWeight: '600',
   },
   customerInput: {
@@ -340,7 +341,7 @@ const styles = StyleSheet.create({
   categoryTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#DC2626',
+    color: theme.colors.primary,
     marginBottom: 12,
   },
   menuItem: {
@@ -424,7 +425,7 @@ const styles = StyleSheet.create({
   totalText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#DC2626',
+    color: theme.colors.primary,
     textAlign: 'right',
   },
   emptyCartText: {
@@ -434,7 +435,7 @@ const styles = StyleSheet.create({
   },
   createOrderButton: {
     margin: 16,
-    backgroundColor: '#DC2626',
+    backgroundColor: theme.colors.primaryDark,
     paddingVertical: 16,
     borderRadius: 8,
   },

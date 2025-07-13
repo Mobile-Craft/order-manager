@@ -12,8 +12,8 @@ import { useNavigation } from '@react-navigation/native';
 import { DrawerActions } from '@react-navigation/native';
 import { useOrders } from '@/context/OrderContext';
 import { useAuth } from '@/context/AuthContext';
-import { OrderCard } from '@/components/OrderCard';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { theme } from '@/lib/theme';
 
 export default function HistoryScreen() {
   const navigation = useNavigation();
@@ -74,10 +74,10 @@ export default function HistoryScreen() {
           style={styles.menuButton}
           onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
         >
-          <Menu size={24} color="#DC2626" />
+          <Menu size={24} color={theme.colors.primaryDark} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <History size={28} color="#DC2626" />
+          <History size={28} color={theme.colors.primaryDark} />
           <Text style={styles.title}>Historial</Text>
         </View>
         <View style={styles.placeholder} />
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#DC2626',
+    color: theme.colors.primaryDark,
   },
   placeholder: {
     width: 40,
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   total: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#DC2626',
+    color: theme.colors.primaryDark,
   },
   paymentBadge: {
     backgroundColor: '#ECFDF5',
