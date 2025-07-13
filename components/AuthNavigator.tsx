@@ -1,5 +1,4 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { useAuth } from '@/context/AuthContext';
@@ -83,21 +82,17 @@ function AuthStack() {
 export function AuthNavigator() {
   const { user } = useAuth();
 
-  return (
-    <NavigationContainer>
-      {!user ? (
-        // Usuario no autenticado - mostrar login
-        <AuthStack />
-      ) : user.role === 'Admin' ? (
-        // Usuario Admin - mostrar drawer completo
-        <AdminDrawer />
-      ) : user.role === 'Cocina' ? (
-        // Usuario Cocina - solo vista de cocina
-        <KitchenStack />
-      ) : (
-        // Fallback - mostrar login si el rol no es reconocido
-        <AuthStack />
-      )}
-    </NavigationContainer>
-  );
+  if (!user) {
+    // Usuario no autenticado - mostrar login
+    return <AuthStack />;
+  } else if (user.role === 'Admin') {
+    // Usuario Admin - mostrar drawer completo
+    return <AdminDrawer />;
+  } else if (user.role === 'Cocina') {
+    // Usuario Cocina - solo vista de cocina
+    return <KitchenStack />;
+  } else {
+    // Fallback - mostrar login si el rol no es reconocido
+    return <AuthStack />;
+  }
 }

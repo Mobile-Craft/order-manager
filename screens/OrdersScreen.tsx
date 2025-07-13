@@ -30,16 +30,21 @@ export default function OrdersScreen() {
   const [selectedItems, setSelectedItems] = useState<OrderItem[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
 
-  // Redirigir usuarios de cocina
-  if (user?.role === 'Cocina') {
-    navigation.navigate('kitchen' as never);
-    return null;
-  }
+  // Redirigir usuarios de cocina usando useEffect
+  useEffect(() => {
+    if (user?.role === 'Cocina') {
+      navigation.navigate('kitchen' as never);
+    }
+  }, [user?.role, navigation]);
 
   useEffect(() => {
     fetchMenu().then(setMenuItems);
   }, []);
 
+  // No renderizar nada si el usuario es de cocina
+  if (user?.role === 'Cocina') {
+    return null;
+  }
 
   const addToOrder = (menuItem: typeof menuItems[0]) => {
     const existingItem = selectedItems.find(item => item.id === menuItem.id);
