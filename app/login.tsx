@@ -52,7 +52,7 @@ export default function LoginScreen() {
           {assets && assets[0] && (
             <Image
               source={{ uri: assets[0].uri }}
-              style={styles.logo}
+              style={[styles.logo, { borderRadius: 60 }]}
               resizeMode="contain"
             />
           )}
@@ -65,19 +65,19 @@ export default function LoginScreen() {
           <Text style={styles.roleTitle}>Selecciona tu rol</Text>
           
           <TouchableOpacity
-            style={[styles.roleButton, styles.adminButton]}
+            style={[styles.roleButton, styles.adminButton, styles.smallerButton]}
             onPress={handleAdminPress}
           >
-            <User size={32} color="white" />
+            <User size={28} color="white" />
             <Text style={styles.roleButtonText}>Administrador</Text>
             <Text style={styles.roleDescription}>Acceso completo al sistema</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.roleButton, styles.kitchenButton]}
+            style={[styles.roleButton, styles.kitchenButton, styles.smallerButton]}
             onPress={handleKitchenLogin}
           >
-            <ChefHat size={32} color="white" />
+            <ChefHat size={28} color="white" />
             <Text style={styles.roleButtonText}>Cocina</Text>
             <Text style={styles.roleDescription}>Vista de preparación de pedidos</Text>
           </TouchableOpacity>
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   roleButton: {
-    padding: 24,
+    padding: 20,
     borderRadius: 16,
     alignItems: 'center',
     elevation: 4,
@@ -214,6 +214,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
   },
+  smallerButton: {
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+  },
   adminButton: {
     backgroundColor: theme.colors.primaryDark,
   },
@@ -221,14 +225,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#F59E0B',
   },
   roleButtonText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: 'white',
-    marginTop: 12,
+    marginTop: 10,
     marginBottom: 4,
   },
   roleDescription: {
-    fontSize: 14,
+    fontSize: 13,
     color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
   },
