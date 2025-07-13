@@ -16,17 +16,25 @@ import { DrawerActions } from '@react-navigation/native';
 import { useOrders } from '@/context/OrderContext';
 import { OrderCard } from '@/components/OrderCard';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { useAuth } from '@/context/AuthContext';
 import { MenuItem, OrderItem } from '@/types/Order';
 import { fetchMenu } from '@/data/menu';
 import { theme } from '@/lib/theme';
 
 export default function OrdersScreen() {
   const navigation = useNavigation();
+  const { user } = useAuth();
   const { orders, addOrder, updateOrderStatus, completeOrder, isLoading } = useOrders();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [selectedItems, setSelectedItems] = useState<OrderItem[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+
+  // Redirigir usuarios de cocina
+  if (user?.role === 'Cocina') {
+    navigation.navigate('kitchen' as never);
+    return null;
+  }
 
   useEffect(() => {
     fetchMenu().then(setMenuItems);

@@ -18,25 +18,29 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
       name: 'Pedidos Actuales',
       icon: ShoppingCart,
       route: 'orders',
-      adminOnly: false,
+      adminOnly: false, // Accesible para Admin
+      kitchenOnly: false,
     },
     {
       name: 'Vista Cocina',
       icon: ChefHat,
       route: 'kitchen',
-      adminOnly: false,
+      adminOnly: false, // Accesible para ambos
+      kitchenOnly: false,
     },
     {
       name: 'Historial',
       icon: History,
       route: 'history',
       adminOnly: true,
+      kitchenOnly: false,
     },
     {
       name: 'Ventas',
       icon: DollarSign,
       route: 'sales',
       adminOnly: true,
+      kitchenOnly: false,
     },
   ];
 
@@ -76,7 +80,11 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
         {/* Menu Items */}
         <View style={styles.menuContainer}>
           {menuItems.map((item) => {
+            // Si es solo para admin y el usuario no es admin, no mostrar
             if (item.adminOnly && !isAdmin) return null;
+            
+            // Si el usuario es de cocina, solo mostrar la vista de cocina
+            if (user?.role === 'Cocina' && item.route !== 'kitchen') return null;
 
             return (
               <TouchableOpacity
