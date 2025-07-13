@@ -7,10 +7,9 @@ import {
   SafeAreaView,
   TouchableOpacity,
 } from 'react-native';
-import { ChefHat, Menu } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
-import { DrawerActions } from '@react-navigation/native';
+import { ChefHat, LogOut } from 'lucide-react-native';
 import { useOrders } from '@/context/OrderContext';
+import { useAuth } from '@/context/AuthContext';
 import { OrderCard } from '@/components/OrderCard';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { theme } from '@/lib/theme';
@@ -24,8 +23,8 @@ export default function KitchenScreen() {
     require('@/assets/images/inProcessIcon.png'),
     require('@/assets/images/doneIcon.png'),
   ]);
-  const navigation = useNavigation();
   const { orders, updateOrderStatus, isLoading } = useOrders();
+  const { logout } = useAuth();
 
   // Solo mostrar órdenes que no están entregadas
   const activeOrders = orders.filter(order => order.status !== 'Entregada');
@@ -33,17 +32,16 @@ export default function KitchenScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.menuButton}
-          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-        >
-          <Menu size={24} color={theme.colors.primaryDark} />
-        </TouchableOpacity>
         <View style={styles.headerContent}>
           <ChefHat size={28} color={theme.colors.primaryDark} />
           <Text style={styles.title}>Vista Cocina</Text>
         </View>
-        <View style={styles.placeholder} />
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={logout}
+        >
+          <LogOut size={20} color={theme.colors.primaryDark} />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.statsContainer}>
@@ -169,9 +167,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  menuButton: {
-    padding: 8,
-  },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -182,8 +177,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: theme.colors.primaryDark,
   },
-  placeholder: {
-    width: 40,
+  logoutButton: {
+    padding: 8,
+    backgroundColor: '#DBEAFE',
+    borderRadius: 8,
   },
   statsContainer: {
     padding: 16,
@@ -223,17 +220,6 @@ const styles = StyleSheet.create({
   section: {
     marginTop: 16,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#F3F4F6',
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#E5E7EB',
-  },
   sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -245,16 +231,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: '#E5E7EB',
   },
-
   sectionTitleText: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#1F2937',
   },
-
   sectionIcon: {
     width: 24,
     height: 24,
   },
-
 });

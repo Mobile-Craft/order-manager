@@ -15,7 +15,7 @@ import { theme } from '@/lib/theme';
 import { useAssets } from 'expo-asset';
 import { Image } from 'react-native';
 
-export default function LoginScreen() {
+function LoginScreen() {
   const [assets, error] = useAssets([
     require('@/assets/images/logo.png'),
   ]);
@@ -162,6 +162,7 @@ export default function LoginScreen() {
   );
 }
 
+export default LoginScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
