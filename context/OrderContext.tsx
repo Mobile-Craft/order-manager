@@ -135,6 +135,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const loadOrders = async () => {
     try {
       // dispatch({ type: 'SET_LOADING', payload: true });
+      console.log('Loading orders from Supabase...');
 
       // Cargar órdenes activas (no entregadas)
       const { data: activeOrders, error: activeError } = await supabase
@@ -143,7 +144,10 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         .neq('status', 'Entregada')
         .order('created_at', { ascending: true });
 
-      if (activeError) throw activeError;
+      if (activeError) {
+        console.error('Error loading active orders:', activeError);
+        throw activeError;
+      }
 
       // Cargar órdenes entregadas
       const { data: deliveredOrders, error: deliveredError } = await supabase
@@ -152,7 +156,15 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         .eq('status', 'Entregada')
         .order('delivered_at', { ascending: false });
 
-      if (deliveredError) throw deliveredError;
+      if (deliveredError) {
+        console.error('Error loading delivered orders:', deliveredError);
+        throw deliveredError;
+      }
+
+      console.log('Orders loaded successfully:', {
+        active: activeOrders?.length || 0,
+        delivered: deliveredOrders?.length || 0
+      });
 
       dispatch({
         type: 'SET_ORDERS',

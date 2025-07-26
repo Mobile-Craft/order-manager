@@ -29,6 +29,8 @@ export default function OrdersScreen() {
   const [customerName, setCustomerName] = useState('');
   const [selectedItems, setSelectedItems] = useState<OrderItem[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [menuLoading, setMenuLoading] = useState(true);
+  const [menuError, setMenuError] = useState<string | null>(null);
 
   // Redirigir usuarios de cocina usando useEffect
   useEffect(() => {
@@ -38,8 +40,25 @@ export default function OrdersScreen() {
   }, [user?.role, navigation]);
 
   useEffect(() => {
-    fetchMenu().then(setMenuItems);
+    loadMenu();
   }, []);
+
+  const loadMenu = async () => {
+    try {
+      setMenuLoading(true);
+      setMenuError(null);
+      console.log('Loading menu...');
+      const menu = await fetchMenu();
+      console.log('Menu loaded:', menu);
+      setMenuItems(menu);
+    } catch (error) {
+      console.error('Error loading menu:', error);
+      setMenuError('Error al cargar el menú');
+      Alert.alert('Error', 'No se pudo cargar el menú. Verifica la conexión a la base de datos.');
+    } finally {
+      setMenuLoading(false);
+    }
+  };
 
   // No renderizar nada si el usuario es de cocina
   if (user?.role === 'Cocina') {
@@ -187,7 +206,27 @@ export default function OrdersScreen() {
             onChangeText={setCustomerName}
           />
 
+          {menuLoading ? (
+            <View style={styles.menuLoadingContainer}>
+              <LoadingSpinner message="Cargando menú..." />
+            </View>
+          ) : menuError ? (
+            <View style={styles.menuErrorContainer}>
+              <Text style={styles.menuErrorText}>{menuError}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={loadMenu}>
+                <Text style={styles.retryButtonText}>Reintentar</Text>
+              </TouchableOpacity>
+            </View>
+          ) : menuItems.length === 0 ? (
+            <View style={styles.menuErrorContainer}>
+              <Text style={styles.menuErrorText}>No hay productos disponibles</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={loadMenu}>
+                <Text style={styles.retryButtonText}>Recargar</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
           <ScrollView style={styles.menuContainer}>
+            <Text style={styles.menuTitle}>Selecciona productos ({menuItems.length} disponibles)</Text>
             {Object.entries(categorizedItems).map(([category, items]) => (
               <View key={category} style={styles.categorySection}>
                 <Text style={styles.categoryTitle}>{category}</Text>
@@ -223,6 +262,7 @@ export default function OrdersScreen() {
               </View>
             ))}
           </ScrollView>
+          )}
 
           <View style={styles.orderSummary}>
             <View style={styles.summaryHeader}>
@@ -456,6 +496,41 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  menuLoadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  menuErrorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  menuErrorText: {
+    fontSize: 16,
+    color: '#DC2626',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: theme.colors.primaryDark,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  menuTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 16,
     textAlign: 'center',
   },
 });
