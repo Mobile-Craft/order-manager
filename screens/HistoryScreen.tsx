@@ -156,7 +156,7 @@ export default function HistoryScreen() {
                         {order.duration_minutes && (
                           <View style={styles.durationContainer}>
                             <Text style={styles.durationLabel}>Tiempo de entrega:</Text>
-                            <Text style={styles.durationValue}>{formatDuration(order.duration_minutes)}</Text>
+                            <Text style={styles.durationValue}>{formatDuration(order?.duration_minutes)}</Text>
                           </View>
                         )}
                       </View>
