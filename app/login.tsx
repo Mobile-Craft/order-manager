@@ -63,7 +63,7 @@ function LoginScreen() {
         {/* Selección de Rol */}
         <View style={styles.roleSelection}>
           <Text style={styles.roleTitle}>Selecciona tu rol</Text>
-          
+
           <TouchableOpacity
             style={[styles.roleButton, styles.adminButton, styles.smallerButton]}
             onPress={handleAdminPress}
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   },
   logo: {
     width: 120,
-    height: 120,
+    height: 118,
     marginBottom: 24,
   },
   title: {

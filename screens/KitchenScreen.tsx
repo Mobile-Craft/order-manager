@@ -7,7 +7,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
 } from 'react-native';
-import { ChefHat, LogOut } from 'lucide-react-native';
+import { ChefHat, LogOut, Menu } from 'lucide-react-native';
 import { useOrders } from '@/context/OrderContext';
 import { useAuth } from '@/context/AuthContext';
 import { OrderCard } from '@/components/OrderCard';
@@ -15,6 +15,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { theme } from '@/lib/theme';
 import { useAssets } from 'expo-asset';
 import { Image } from 'react-native';
+import { DrawerActions, useNavigation } from '@react-navigation/native';
 
 
 export default function KitchenScreen() {
@@ -24,24 +25,42 @@ export default function KitchenScreen() {
     require('@/assets/images/doneIcon.png'),
   ]);
   const { orders, updateOrderStatus, isLoading } = useOrders();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const navigation = useNavigation();
 
   // Solo mostrar órdenes que no están entregadas
   const activeOrders = orders.filter(order => order.status !== 'Entregada');
+  const isAdmin = user?.role === 'Admin';
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
+        {isAdmin ? (
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+          >
+            <Menu size={24} color={theme.colors.primaryDark} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.placeholder} />
+        )}
+
         <View style={styles.headerContent}>
           <ChefHat size={28} color={theme.colors.primaryDark} />
           <Text style={styles.title}>Vista Cocina</Text>
         </View>
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={logout}
-        >
-          <LogOut size={20} color={theme.colors.primaryDark} />
-        </TouchableOpacity>
+
+        {!isAdmin ? (
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={logout}
+          >
+            <LogOut size={20} color={theme.colors.primaryDark} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.placeholder} />
+        )}
       </View>
 
       <View style={styles.statsContainer}>
@@ -177,10 +196,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: theme.colors.primaryDark,
   },
+  menuButton: {
+    padding: 8,
+  },
   logoutButton: {
     padding: 8,
     backgroundColor: '#DBEAFE',
     borderRadius: 8,
+  },
+  placeholder: {
+    width: 32,
   },
   statsContainer: {
     padding: 16,
