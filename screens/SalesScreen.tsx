@@ -231,6 +231,33 @@ export default function SalesScreen() {
             </View>
           </View>
         )}
+
+        {salesData.averageDeliveryTime > 0 && (
+          <View style={styles.section}>
+            <View style={styles.statSubTitleContainer}>
+              {assets && assets[3] && (
+                <Image
+                  source={{ uri: assets[3].uri }}
+                  style={{ width: 24, height: 24 }}
+                  resizeMode="contain"
+                />
+              )}
+              <Text style={styles.sectionTitle}>Tiempo de Entrega</Text>
+            </View>
+
+            <View style={styles.analyticsCard}>
+              <View style={styles.analyticsRow}>
+                <Text style={styles.analyticsLabel}>Promedio de entrega:</Text>
+                <Text style={styles.analyticsValue}>
+                  {Math.floor(salesData.averageDeliveryTime / 60) > 0 
+                    ? `${Math.floor(salesData.averageDeliveryTime / 60)}h ${salesData.averageDeliveryTime % 60}m`
+                    : `${salesData.averageDeliveryTime}m`
+                  }
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

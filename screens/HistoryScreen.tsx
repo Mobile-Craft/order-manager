@@ -55,6 +55,18 @@ export default function HistoryScreen() {
     });
   };
 
+  const formatDuration = (minutes?: number) => {
+    if (!minutes || minutes <= 0) return 'N/A';
+    
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    
+    if (hours > 0) {
+      return `${hours}h ${mins}m`;
+    }
+    return `${mins}m`;
+  };
+
   // Agrupar órdenes por fecha
   const ordersByDate = deliveredOrders.reduce((acc, order) => {
     const date = formatDate(order.delivered_at || order.created_at);
@@ -140,6 +152,13 @@ export default function HistoryScreen() {
                             <Text style={styles.paymentText}>{order.payment_method}</Text>
                           </View>
                         </View>
+
+                        {order.duration_minutes && (
+                          <View style={styles.durationContainer}>
+                            <Text style={styles.durationLabel}>Tiempo de entrega:</Text>
+                            <Text style={styles.durationValue}>{formatDuration(order.duration_minutes)}</Text>
+                          </View>
+                        )}
                       </View>
                     ))}
                 </View>
@@ -317,5 +336,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#065F46',
+  },
+  durationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  durationLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  durationValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#059669',
   },
 });

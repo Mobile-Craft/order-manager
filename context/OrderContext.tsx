@@ -261,6 +261,14 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
     const revenueToday = todayOrders.reduce((sum, order) => sum + order.total, 0);
 
+    // Calculate average delivery time
+    const ordersWithDuration = state.deliveredOrders.filter(order => 
+      order.duration_minutes && order.duration_minutes > 0
+    );
+    const averageDeliveryTime = ordersWithDuration.length > 0
+      ? Math.round(ordersWithDuration.reduce((sum, order) => sum + (order.duration_minutes || 0), 0) / ordersWithDuration.length)
+      : 0;
+
     return {
       totalOrders: state.deliveredOrders.length,
       totalRevenue: cashTotal + transferTotal,
@@ -268,6 +276,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       transferTotal,
       ordersToday: todayOrders.length,
       revenueToday,
+      averageDeliveryTime,
     };
   };
 

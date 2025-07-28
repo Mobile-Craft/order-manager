@@ -15,6 +15,7 @@ export interface Order {
   payment_method: 'Efectivo' | 'Transferencia' | null;
   created_at: string;
   delivered_at?: string;
+  duration_minutes?: number;
 }
 
 export interface MenuItem {
@@ -39,4 +40,5 @@ export interface SalesData {
   transferTotal: number;
   ordersToday: number;
   revenueToday: number;
+  averageDeliveryTime: number;
 }
