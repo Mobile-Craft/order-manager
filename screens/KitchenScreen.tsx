@@ -44,7 +44,7 @@ export default function KitchenScreen() {
           </TouchableOpacity>
           <View style={styles.headerContent}>
             {/* <History size={28} color={theme.colors.primaryDark} /> */}
-            <Text style={styles.title}>Historial</Text>
+            <Text style={styles.title}>Cocina</Text>
           </View>
           <View style={styles.placeholder} />
         </View>
@@ -52,7 +52,7 @@ export default function KitchenScreen() {
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <ChefHat size={28} color={theme.colors.primaryDark} />
-            <Text style={styles.title}>Vista Cocina</Text>
+            <Text style={styles.title}>Cocina</Text>
           </View>
           <TouchableOpacity style={styles.logoutButton} onPress={logout}>
             <LogOut size={20} color={theme.colors.primaryDark} />

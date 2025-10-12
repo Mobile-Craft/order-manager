@@ -24,7 +24,8 @@ import { theme } from '@/lib/theme';
 export default function OrdersScreen() {
   const navigation = useNavigation();
   const { user } = useAuth();
-  const { orders, addOrder, updateOrderStatus, completeOrder, isLoading } = useOrders();
+  const { orders, addOrder, updateOrderStatus, completeOrder, isLoading } =
+    useOrders();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [selectedItems, setSelectedItems] = useState<OrderItem[]>([]);
@@ -54,7 +55,10 @@ export default function OrdersScreen() {
     } catch (error) {
       console.error('Error loading menu:', error);
       setMenuError('Error al cargar el menú');
-      Alert.alert('Error', 'No se pudo cargar el menú. Verifica la conexión a la base de datos.');
+      Alert.alert(
+        'Error',
+        'No se pudo cargar el menú. Verifica la conexión a la base de datos.'
+      );
     } finally {
       setMenuLoading(false);
     }
@@ -65,44 +69,48 @@ export default function OrdersScreen() {
     return null;
   }
 
-  const addToOrder = (menuItem: typeof menuItems[0]) => {
-    const existingItem = selectedItems.find(item => item.id === menuItem.id);
+  const addToOrder = (menuItem: (typeof menuItems)[0]) => {
+    const existingItem = selectedItems.find((item) => item.id === menuItem.id);
 
     if (existingItem) {
-      setSelectedItems(prev =>
-        prev.map(item =>
+      setSelectedItems((prev) =>
+        prev.map((item) =>
           item.id === menuItem.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         )
       );
     } else {
-      setSelectedItems(prev => [...prev, {
-        id: menuItem.id,
-        name: menuItem.name,
-        quantity: 1,
-        price: menuItem.price,
-      }]);
+      setSelectedItems((prev) => [
+        ...prev,
+        {
+          id: menuItem.id,
+          name: menuItem.name,
+          quantity: 1,
+          price: menuItem.price,
+        },
+      ]);
     }
   };
 
   const removeFromOrder = (itemId: string) => {
-    setSelectedItems(prev => {
-      const existingItem = prev.find(item => item.id === itemId);
+    setSelectedItems((prev) => {
+      const existingItem = prev.find((item) => item.id === itemId);
       if (existingItem && existingItem.quantity > 1) {
-        return prev.map(item =>
-          item.id === itemId
-            ? { ...item, quantity: item.quantity - 1 }
-            : item
+        return prev.map((item) =>
+          item.id === itemId ? { ...item, quantity: item.quantity - 1 } : item
         );
       } else {
-        return prev.filter(item => item.id !== itemId);
+        return prev.filter((item) => item.id !== itemId);
       }
     });
   };
 
   const getTotalPrice = () => {
-    return selectedItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return selectedItems.reduce(
+      (total, item) => total + item.price * item.quantity,
+      0
+    );
   };
 
   const handleCreateOrder = () => {
@@ -147,35 +155,41 @@ export default function OrdersScreen() {
           <Menu size={24} color={theme.colors.primaryDark} />
         </TouchableOpacity>
         <Text style={styles.title}>Pedidos Actuales</Text>
-        <TouchableOpacity
-          style={styles.createButton}
-          onPress={() => setShowCreateModal(true)}
-        >
-          <Plus size={20} color="white" />
-        </TouchableOpacity>
+        <View style={{width: 24}}></View>
       </View>
 
       {isLoading ? (
         <LoadingSpinner message="Cargando órdenes..." />
       ) : (
-        <ScrollView style={styles.ordersList}>
-          {orders.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No hay órdenes activas</Text>
-              <Text style={styles.emptySubtext}>Las nuevas órdenes aparecerán aquí</Text>
-            </View>
-          ) : (
-            orders.map(order => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                onStatusChange={updateOrderStatus}
-                onCompleteOrder={completeOrder}
-                showActions={true}
-              />
-            ))
-          )}
-        </ScrollView>
+        <>
+          <TouchableOpacity
+            style={styles.createButton}
+            onPress={() => setShowCreateModal(true)}
+          >
+            <Text style={styles.createButtonText}>Nuevo pedido</Text>
+            <Plus size={20} color="white" />
+          </TouchableOpacity>
+          <ScrollView style={styles.ordersList}>
+            {orders.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>No hay órdenes activas</Text>
+                <Text style={styles.emptySubtext}>
+                  Las nuevas órdenes aparecerán aquí
+                </Text>
+              </View>
+            ) : (
+              orders.map((order) => (
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  onStatusChange={updateOrderStatus}
+                  onCompleteOrder={completeOrder}
+                  showActions={true}
+                />
+              ))
+            )}
+          </ScrollView>
+        </>
       )}
 
       <Modal
@@ -219,49 +233,58 @@ export default function OrdersScreen() {
             </View>
           ) : menuItems.length === 0 ? (
             <View style={styles.menuErrorContainer}>
-              <Text style={styles.menuErrorText}>No hay productos disponibles</Text>
+              <Text style={styles.menuErrorText}>
+                No hay productos disponibles
+              </Text>
               <TouchableOpacity style={styles.retryButton} onPress={loadMenu}>
                 <Text style={styles.retryButtonText}>Recargar</Text>
               </TouchableOpacity>
             </View>
           ) : (
-          <ScrollView style={styles.menuContainer}>
-            <Text style={styles.menuTitle}>Selecciona productos ({menuItems.length} disponibles)</Text>
-            {Object.entries(categorizedItems).map(([category, items]) => (
-              <View key={category} style={styles.categorySection}>
-                <Text style={styles.categoryTitle}>{category}</Text>
-                {items.map(item => {
-                  const selectedItem = selectedItems.find(selected => selected.id === item.id);
-                  const quantity = selectedItem?.quantity || 0;
+            <ScrollView style={styles.menuContainer}>
+              <Text style={styles.menuTitle}>
+                Selecciona productos ({menuItems.length} disponibles)
+              </Text>
+              {Object.entries(categorizedItems).map(([category, items]) => (
+                <View key={category} style={styles.categorySection}>
+                  <Text style={styles.categoryTitle}>{category}</Text>
+                  {items.map((item) => {
+                    const selectedItem = selectedItems.find(
+                      (selected) => selected.id === item.id
+                    );
+                    const quantity = selectedItem?.quantity || 0;
 
-                  return (
-                    <View key={item.id} style={styles.menuItem}>
-                      <View style={styles.itemInfo}>
-                        <Text style={styles.itemName}>{item.name}</Text>
-                        <Text style={styles.itemPrice}>RD${item.price}</Text>
+                    return (
+                      <View key={item.id} style={styles.menuItem}>
+                        <View style={styles.itemInfo}>
+                          <Text style={styles.itemName}>{item.name}</Text>
+                          <Text style={styles.itemPrice}>RD${item.price}</Text>
+                        </View>
+                        <View style={styles.quantityControls}>
+                          <TouchableOpacity
+                            style={styles.quantityButton}
+                            onPress={() => removeFromOrder(item.id)}
+                            disabled={quantity === 0}
+                          >
+                            <Minus
+                              size={16}
+                              color={quantity > 0 ? '#DC2626' : '#9CA3AF'}
+                            />
+                          </TouchableOpacity>
+                          <Text style={styles.quantityText}>{quantity}</Text>
+                          <TouchableOpacity
+                            style={styles.quantityButton}
+                            onPress={() => addToOrder(item)}
+                          >
+                            <Plus size={16} color={theme.colors.primaryDark} />
+                          </TouchableOpacity>
+                        </View>
                       </View>
-                      <View style={styles.quantityControls}>
-                        <TouchableOpacity
-                          style={styles.quantityButton}
-                          onPress={() => removeFromOrder(item.id)}
-                          disabled={quantity === 0}
-                        >
-                          <Minus size={16} color={quantity > 0 ? '#DC2626' : '#9CA3AF'} />
-                        </TouchableOpacity>
-                        <Text style={styles.quantityText}>{quantity}</Text>
-                        <TouchableOpacity
-                          style={styles.quantityButton}
-                          onPress={() => addToOrder(item)}
-                        >
-                          <Plus size={16} color={theme.colors.primaryDark} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            ))}
-          </ScrollView>
+                    );
+                  })}
+                </View>
+              ))}
+            </ScrollView>
           )}
 
           <View style={styles.orderSummary}>
@@ -272,25 +295,37 @@ export default function OrdersScreen() {
 
             {selectedItems.length > 0 ? (
               <>
-                {selectedItems.map(item => (
+                {selectedItems.map((item) => (
                   <View key={item.id} style={styles.summaryItem}>
                     <Text style={styles.summaryItemText}>
                       {item.quantity}x {item.name}
                     </Text>
-                    <Text style={styles.summaryItemPrice}>RD${item.price * item.quantity}</Text>
+                    <Text style={styles.summaryItemPrice}>
+                      RD${item.price * item.quantity}
+                    </Text>
                   </View>
                 ))}
                 <View style={styles.totalRow}>
-                  <Text style={styles.totalText}>Total: RD${getTotalPrice()}</Text>
+                  <Text style={styles.totalText}>
+                    Total: RD${getTotalPrice()}
+                  </Text>
                 </View>
               </>
             ) : (
-              <Text style={styles.emptyCartText}>No hay productos seleccionados</Text>
+              <Text style={styles.emptyCartText}>
+                No hay productos seleccionados
+              </Text>
             )}
           </View>
 
           <TouchableOpacity
-            style={[styles.createOrderButton, { opacity: selectedItems.length > 0 && customerName.trim() ? 1 : 0.5 }]}
+            style={[
+              styles.createOrderButton,
+              {
+                opacity:
+                  selectedItems.length > 0 && customerName.trim() ? 1 : 0.5,
+              },
+            ]}
             onPress={handleCreateOrder}
             disabled={selectedItems.length === 0 || !customerName.trim()}
           >
@@ -311,6 +346,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    alignContent: 'center',
     padding: 16,
     backgroundColor: 'white',
     borderBottomWidth: 1,
@@ -323,13 +359,22 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: theme.colors.primaryDark,
-    flex: 1,
     textAlign: 'center',
+    paddingRight:8
   },
   createButton: {
     backgroundColor: theme.colors.primaryDark,
     padding: 12,
     borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    margin: 16,
+  },
+  createButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 8,
   },
   ordersList: {
     flex: 1,

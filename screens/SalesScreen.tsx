@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     color: theme.colors.primaryDark,
   },
   placeholder: {
-    width: 40,
+    width: 50,
   },
   accessDenied: {
     flex: 1,
