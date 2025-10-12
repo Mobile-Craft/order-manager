@@ -7,6 +7,7 @@ import OrdersScreen from '@/screens/OrdersScreen';
 import KitchenScreen from '@/screens/KitchenScreen';
 import HistoryScreen from '@/screens/HistoryScreen';
 import SalesScreen from '@/screens/SalesScreen';
+import ProductsScreen from '@/screens/ProductsScreen';
 import { CustomDrawerContent } from '@/components/CustomDrawerContent';
 
 const Stack = createStackNavigator();
@@ -64,6 +65,14 @@ function AdminDrawer() {
         options={{
           drawerLabel: 'Ventas',
           title: 'Ventas',
+        }}
+      />
+      <Drawer.Screen
+        name="products"
+        component={ProductsScreen}
+        options={{
+          drawerLabel: 'Productos',
+          title: 'Productos',
         }}
       />
     </Drawer.Navigator>

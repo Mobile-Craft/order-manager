@@ -17,6 +17,7 @@ import {
   User,
   LogOut,
   ChefHat,
+  Package,
 } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 import { theme } from '@/lib/theme';
@@ -54,6 +55,13 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
       name: 'Ventas',
       icon: DollarSign,
       route: 'sales',
+      adminOnly: true,
+      kitchenOnly: false,
+    },
+    {
+      name: 'Productos',
+      icon: Package,
+      route: 'products',
       adminOnly: true,
       kitchenOnly: false,
     },
