@@ -3,14 +3,81 @@ import { Order, OrderItem, SalesData } from '@/types/Order';
 import { supabase } from '@/lib/supabase';
 import { Audio } from 'expo-av';
 
+/** =========================
+ *  Tipos y Helpers de Filtros
+ *  ========================= */
+export type DateFilter =
+  | { type: 'week' }                                  // Semana actual (Lun-Dom)
+  | { type: 'month'; year: number; month: number }    // month: 0-11
+  | { type: 'range'; start: Date; end: Date }         // rango personalizado
+  | { type: 'all' };                                  // todas (equivalente a sin filtro)
 
+const atStartOfDay = (d: Date) =>
+  new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+
+const atEndOfDay = (d: Date) =>
+  new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
+const getWeekRange = (reference = new Date()) => {
+  // Semana iniciando LUNES
+  const day = reference.getDay(); // 0=Dom
+  const diffToMonday = (day + 6) % 7;
+  const start = new Date(reference);
+  start.setDate(reference.getDate() - diffToMonday);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return { start: atStartOfDay(start), end: atEndOfDay(end) };
+};
+
+const getMonthRange = (year: number, monthIndex: number) => {
+  const start = new Date(year, monthIndex, 1);
+  const end = new Date(year, monthIndex + 1, 0); // último día del mes
+  return { start: atStartOfDay(start), end: atEndOfDay(end) };
+};
+
+const parseOrderDate = (o: Order) => new Date(o.delivered_at || o.created_at);
+
+const filterDeliveredBy = (orders: Order[], filter?: DateFilter): Order[] => {
+  if (!filter || filter.type === 'all') return orders;
+
+  if (filter.type === 'week') {
+    const { start, end } = getWeekRange();
+    return orders.filter(o => {
+      const d = parseOrderDate(o);
+      return d >= start && d <= end;
+    });
+  }
+
+  if (filter.type === 'month') {
+    const { start, end } = getMonthRange(filter.year, filter.month);
+    return orders.filter(o => {
+      const d = parseOrderDate(o);
+      return d >= start && d <= end;
+    });
+  }
+
+  if (filter.type === 'range') {
+    const start = atStartOfDay(filter.start);
+    const end = atEndOfDay(filter.end);
+    return orders.filter(o => {
+      const d = parseOrderDate(o);
+      return d >= start && d <= end;
+    });
+  }
+
+  return orders;
+};
+
+/** =========================
+ *  Contexto de Órdenes
+ *  ========================= */
 interface OrderContextType {
   orders: Order[];
   deliveredOrders: Order[];
   addOrder: (customerName: string, items: OrderItem[]) => Promise<void>;
   updateOrderStatus: (orderId: string, status: Order['status']) => Promise<void>;
   completeOrder: (orderId: string, paymentMethod: 'Efectivo' | 'Transferencia') => Promise<void>;
-  getSalesData: () => SalesData;
+  getSalesData: (filter?: DateFilter) => SalesData;  // ⬅️ ahora acepta filtro opcional
   isLoading: boolean;
 }
 
@@ -75,14 +142,13 @@ let notificationSound: Audio.Sound | null = null;
 async function loadNotificationSound() {
   try {
     const { sound } = await Audio.Sound.createAsync(
-      require('@/assets/sounds/shop.mp3') // ajusta la ruta
+      require('@/assets/sounds/shop.mp3') // ajusta la ruta si es necesario
     );
     notificationSound = sound;
   } catch (error) {
     console.error('Error loading sound:', error);
   }
 }
-
 
 export function OrderProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(orderReducer, {
@@ -97,7 +163,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     loadOrders();
   }, []);
 
-  // Suscribirse a cambios en tiempo real
+  // Suscripción en tiempo real
   useEffect(() => {
     const ordersSubscription = supabase
       .channel('orders_changes')
@@ -111,7 +177,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         (payload) => {
           console.log('Order change received:', payload);
           playNotificationSound();
-          loadOrders(); // Recargar todas las órdenes cuando hay cambios
+          loadOrders();
         }
       )
       .subscribe();
@@ -131,13 +197,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     }
   }
 
-
   const loadOrders = async () => {
     try {
-      // dispatch({ type: 'SET_LOADING', payload: true });
       console.log('Loading orders from Supabase...');
 
-      // Cargar órdenes activas (no entregadas)
+      // Órdenes activas (no entregadas)
       const { data: activeOrders, error: activeError } = await supabase
         .from('orders')
         .select('*')
@@ -149,7 +213,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         throw activeError;
       }
 
-      // Cargar órdenes entregadas
+      // Órdenes entregadas
       const { data: deliveredOrders, error: deliveredError } = await supabase
         .from('orders')
         .select('*')
@@ -202,7 +266,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
 
-      // La suscripción en tiempo real se encargará de actualizar el estado
+      // La suscripción en tiempo real actualizará el estado
     } catch (error) {
       console.error('Error adding order:', error);
       throw error;
@@ -216,9 +280,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         .update({ status })
         .eq('id', orderId);
 
-      if (error) throw error;
+    if (error) throw error;
 
-      // La suscripción en tiempo real se encargará de actualizar el estado
+      // La suscripción en tiempo real actualizará el estado
     } catch (error) {
       console.error('Error updating order status:', error);
       throw error;
@@ -238,40 +302,49 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
 
-      // La suscripción en tiempo real se encargará de actualizar el estado
+      // La suscripción en tiempo real actualizará el estado
     } catch (error) {
       console.error('Error completing order:', error);
       throw error;
     }
   };
 
-  const getSalesData = (): SalesData => {
+  /** =========================
+   *  getSalesData con filtro
+   *  ========================= */
+  const getSalesData = (filter?: DateFilter): SalesData => {
+    // Órdenes del período (si no hay filtro = todas, como antes)
+    const periodOrders = filterDeliveredBy(state.deliveredOrders, filter);
+
+    const totalOrders = periodOrders.length;
+    const totalRevenue = periodOrders.reduce((sum, o) => sum + o.total, 0);
+
+    const cashTotal = periodOrders
+      .filter(o => (o.payment_method || '').toLowerCase() === 'efectivo')
+      .reduce((sum, o) => sum + o.total, 0);
+
+    const transferTotal = periodOrders
+      .filter(o => (o.payment_method || '').toLowerCase() === 'transferencia')
+      .reduce((sum, o) => sum + o.total, 0);
+
+    // "Hoy" se mantiene respecto al día actual, independiente del filtro (compatibilidad previa)
     const today = new Date().toDateString();
-    const todayOrders = state.deliveredOrders.filter(order =>
-      order.delivered_at && new Date(order.delivered_at).toDateString() === today
+    const todayOrders = state.deliveredOrders.filter(
+      o => o.delivered_at && new Date(o.delivered_at).toDateString() === today
     );
+    const revenueToday = todayOrders.reduce((sum, o) => sum + o.total, 0);
 
-    const cashTotal = state.deliveredOrders
-      .filter(order => order.payment_method === 'Efectivo')
-      .reduce((sum, order) => sum + order.total, 0);
-
-    const transferTotal = state.deliveredOrders
-      .filter(order => order.payment_method === 'Transferencia')
-      .reduce((sum, order) => sum + order.total, 0);
-
-    const revenueToday = todayOrders.reduce((sum, order) => sum + order.total, 0);
-
-    // Calculate average delivery time
-    const ordersWithDuration = state.deliveredOrders.filter(order => 
-      order.duration_minutes && order.duration_minutes > 0
-    );
-    const averageDeliveryTime = ordersWithDuration.length > 0
-      ? Math.round(ordersWithDuration.reduce((sum, order) => sum + (order.duration_minutes || 0), 0) / ordersWithDuration.length)
+    // Promedio de entrega (min) en el período
+    const withDuration = periodOrders.filter(o => o.duration_minutes && o.duration_minutes > 0);
+    const averageDeliveryTime = withDuration.length
+      ? Math.round(
+          withDuration.reduce((s, o) => s + (o.duration_minutes || 0), 0) / withDuration.length
+        )
       : 0;
 
     return {
-      totalOrders: state.deliveredOrders.length,
-      totalRevenue: cashTotal + transferTotal,
+      totalOrders,
+      totalRevenue,
       cashTotal,
       transferTotal,
       ordersToday: todayOrders.length,

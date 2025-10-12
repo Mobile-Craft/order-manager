@@ -1,7 +1,23 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
-import { DrawerContentScrollView, DrawerContentComponentProps } from '@react-navigation/drawer';
-import { ShoppingCart, History, DollarSign, User, LogOut, ChefHat } from 'lucide-react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+} from 'react-native';
+import {
+  DrawerContentScrollView,
+  DrawerContentComponentProps,
+} from '@react-navigation/drawer';
+import {
+  ShoppingCart,
+  History,
+  DollarSign,
+  User,
+  LogOut,
+  ChefHat,
+} from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 import { theme } from '@/lib/theme';
 import { useAssets } from 'expo-asset';
@@ -9,9 +25,8 @@ import { Image } from 'react-native';
 
 export function CustomDrawerContent(props: DrawerContentComponentProps) {
   const { user, logout, isAdmin } = useAuth();
-  const [assets, error] = useAssets([
-    require('@/assets/images/logo2.jpg'),
-  ]);
+  const currentRoute = props.state?.routes?.[props.state.index]?.name;
+  const [assets, error] = useAssets([require('@/assets/images/logo2.jpg')]);
 
   const menuItems = [
     {
@@ -48,17 +63,24 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
     props.navigation.navigate(routeName);
   };
 
-
-
   return (
-    <SafeAreaView style={styles.container}>
-      <DrawerContentScrollView {...props} contentContainerStyle={styles.scrollContainer}>
+    <>
+      <DrawerContentScrollView
+        {...props}
+        contentContainerStyle={styles.scrollContainer}
+      >
         {/* Header */}
         <View style={styles.header}>
           {assets && assets[0] && (
             <Image
               source={{ uri: assets[0].uri }}
-              style={{ width: 60, height: 60, borderRadius: 30, borderColor: 'white', borderWidth: 1 }}
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: 30,
+                borderColor: 'white',
+                borderWidth: 1,
+              }}
               resizeMode="contain"
             />
           )}
@@ -82,14 +104,17 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
           {menuItems.map((item) => {
             // Si es solo para admin y el usuario no es admin, no mostrar
             if (item.adminOnly && !isAdmin) return null;
-            
+
             // Si el usuario es de cocina, solo mostrar la vista de cocina
-            if (user?.role === 'Cocina' && item.route !== 'kitchen') return null;
+            if (user?.role === 'Cocina' && item.route !== 'kitchen')
+              return null;
+
+            const isActive = currentRoute === item.route;
 
             return (
               <TouchableOpacity
                 key={item.route}
-                style={styles.menuItem}
+                style={[styles.menuItem, isActive && styles.activeMenuItem]}
                 onPress={() => handleNavigation(item.route)}
               >
                 <item.icon size={24} color="#374151" />
@@ -107,7 +132,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
           <Text style={styles.logoutText}>Cerrar Sesión</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </>
   );
 }
 
@@ -123,7 +148,7 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: theme.colors.primary,
     alignItems: 'center',
-    borderRadius: 20
+    borderRadius: 20,
   },
   logoText: {
     fontSize: 30,
@@ -133,7 +158,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginVertical: 4,
     color: theme.colors.background,
-
   },
   subtitle: {
     fontSize: 14,
@@ -194,6 +218,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#374151',
     marginLeft: 16,
+  },
+  activeMenuItem: {
+    backgroundColor: theme.colors.primary + '30', 
+    shadowOpacity: 0.15,
+  },
+  activeMenuItemText: {
+    color: theme.colors.background,
+    fontWeight: '700',
   },
   footer: {
     padding: 16,
