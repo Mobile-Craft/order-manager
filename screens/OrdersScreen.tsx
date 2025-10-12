@@ -81,7 +81,7 @@ export default function OrdersScreen() {
         throw new Error(`Error fetching menu: ${error.message}`);
       }
 
-      console.log('Menu loaded:', menu);
+      console.log('Menu loaded:', data);
       setMenuItems(data as MenuItem[]);
     } catch (error) {
       console.error('Error loading menu:', error);
