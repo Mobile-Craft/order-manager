@@ -18,7 +18,7 @@ import { OrderCard } from '@/components/OrderCard';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { MenuItem, OrderItem } from '@/types/Order';
-import { fetchMenu } from '@/data/menu';
+import { supabase } from '@/lib/supabase';
 import { theme } from '@/lib/theme';
 
 export default function OrdersScreen() {
@@ -42,6 +42,27 @@ export default function OrdersScreen() {
 
   useEffect(() => {
     loadMenu();
+
+    // Suscripción en tiempo real para cambios en el menú
+    const menuSubscription = supabase
+      .channel('menu_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'menu_items',
+        },
+        (payload) => {
+          console.log('Menu change received:', payload);
+          loadMenu(); // Recargar menú cuando hay cambios
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(menuSubscription);
+    };
   }, []);
 
   const loadMenu = async () => {
@@ -49,9 +70,19 @@ export default function OrdersScreen() {
       setMenuLoading(true);
       setMenuError(null);
       console.log('Loading menu...');
-      const menu = await fetchMenu();
+      
+      const { data, error } = await supabase
+        .from('menu_items')
+        .select('*')
+        .order('category', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching menu:', error);
+        throw new Error(`Error fetching menu: ${error.message}`);
+      }
+
       console.log('Menu loaded:', menu);
-      setMenuItems(menu);
+      setMenuItems(data as MenuItem[]);
     } catch (error) {
       console.error('Error loading menu:', error);
       setMenuError('Error al cargar el menú');
