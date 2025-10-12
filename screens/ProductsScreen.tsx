@@ -9,8 +9,18 @@ import {
   Modal,
   Alert,
   SafeAreaView,
+  StyleProp,
+  ViewStyle,
 } from 'react-native';
-import { Plus, Edit, Trash2, Package, Menu, Save, X } from 'lucide-react-native';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Package,
+  Menu,
+  Save,
+  X,
+} from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerActions } from '@react-navigation/native';
 import { useAuth } from '@/context/AuthContext';
@@ -22,12 +32,19 @@ import { theme } from '@/lib/theme';
 export default function ProductsScreen() {
   const navigation = useNavigation();
   const { isAdmin } = useAuth();
+
   const [products, setProducts] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Modal de producto (crear/editar)
   const [showModal, setShowModal] = useState(false);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<MenuItem | null>(null);
+
+  // Sheet interno de “Nueva Categoría”
+  const [showCategorySheet, setShowCategorySheet] = useState(false);
+
+  // Formulario
   const [newCategoryName, setNewCategoryName] = useState('');
   const [formData, setFormData] = useState({
     name: '',
@@ -48,9 +65,10 @@ export default function ProductsScreen() {
         .order('category', { ascending: true });
 
       if (error) throw error;
-      
-      // Obtener categorías únicas
-      const uniqueCategories = [...new Set(data?.map(item => item.category) || [])];
+
+      const uniqueCategories = [
+        ...new Set((data || []).map((item) => item.category).filter(Boolean)),
+      ];
       setCategories(uniqueCategories);
     } catch (error) {
       console.error('Error loading categories:', error);
@@ -81,7 +99,7 @@ export default function ProductsScreen() {
     setFormData({
       name: '',
       price: '',
-      category: categories[0] || '',
+      category: '',
     });
     setShowModal(true);
   };
@@ -106,37 +124,38 @@ export default function ProductsScreen() {
     });
   };
 
-  const openCategoryModal = () => {
+  // ==== Sheet interna de categoría (no es otro Modal) ====
+  const openCategorySheet = () => {
     setNewCategoryName('');
-    setShowCategoryModal(true);
+    setShowCategorySheet(true);
   };
 
-  const closeCategoryModal = () => {
-    setShowCategoryModal(false);
+  const closeCategorySheet = () => {
+    setShowCategorySheet(false);
     setNewCategoryName('');
   };
 
   const addNewCategory = async () => {
-    if (!newCategoryName.trim()) {
+    const name = newCategoryName.trim();
+    if (!name) {
       Alert.alert('Error', 'El nombre de la categoría es requerido');
       return;
     }
 
-    if (categories.includes(newCategoryName.trim())) {
+    if (categories.includes(name)) {
       Alert.alert('Error', 'Esta categoría ya existe');
       return;
     }
 
-    // Agregar la nueva categoría a la lista local
-    const newCategories = [...categories, newCategoryName.trim()].sort();
+    const newCategories = [...categories, name].sort();
     setCategories(newCategories);
-    
-    // Actualizar el formulario si está abierto
-    if (showModal && !formData.category) {
-      setFormData(prev => ({ ...prev, category: newCategoryName.trim() }));
+
+    // Si el modal de producto está abierto y no hay categoría seleccionada o quieres auto-seleccionar la nueva
+    if (showModal) {
+      setFormData((prev) => ({ ...prev, category: name }));
     }
 
-    closeCategoryModal();
+    closeCategorySheet();
     Alert.alert('Éxito', 'Nueva categoría agregada');
   };
 
@@ -145,7 +164,11 @@ export default function ProductsScreen() {
       Alert.alert('Error', 'El nombre del producto es requerido');
       return false;
     }
-    if (!formData.price.trim() || isNaN(Number(formData.price)) || Number(formData.price) <= 0) {
+    if (
+      !formData.price.trim() ||
+      isNaN(Number(formData.price)) ||
+      Number(formData.price) <= 0
+    ) {
       Alert.alert('Error', 'El precio debe ser un número válido mayor a 0');
       return false;
     }
@@ -155,6 +178,14 @@ export default function ProductsScreen() {
     }
     return true;
   };
+
+  const isFormValid = React.useMemo(() => {
+    const nameOk = formData.name.trim().length > 0;
+    const priceNum = Number(formData.price);
+    const priceOk = !!formData.price.trim() && !isNaN(priceNum) && priceNum > 0;
+    const categoryOk = formData.category.trim().length > 0;
+    return nameOk && priceOk && categoryOk;
+  }, [formData]);
 
   const saveProduct = async () => {
     if (!validateForm()) return;
@@ -167,7 +198,6 @@ export default function ProductsScreen() {
       };
 
       if (editingProduct) {
-        // Actualizar producto existente
         const { error } = await supabase
           .from('menu_items')
           .update(productData)
@@ -176,8 +206,10 @@ export default function ProductsScreen() {
         if (error) throw error;
         Alert.alert('Éxito', 'Producto actualizado correctamente');
       } else {
-        // Crear nuevo producto
-        const newId = `${formData.category.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`;
+        // Genera un id legible (puedes cambiarlo por UUID si prefieres)
+        const newId = `${formData.category
+          .toLowerCase()
+          .replace(/\s+/g, '_')}_${Date.now()}`;
         const { error } = await supabase
           .from('menu_items')
           .insert([{ ...productData, id: newId }]);
@@ -188,7 +220,7 @@ export default function ProductsScreen() {
 
       closeModal();
       loadProducts();
-      loadCategories(); // Recargar categorías por si se agregó una nueva
+      loadCategories();
     } catch (error) {
       console.error('Error saving product:', error);
       Alert.alert('Error', 'No se pudo guardar el producto');
@@ -256,6 +288,7 @@ export default function ProductsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.menuButton}
@@ -294,35 +327,42 @@ export default function ProductsScreen() {
               </Text>
             </View>
           ) : (
-            Object.entries(categorizedProducts).map(([category, categoryProducts]) => (
-              <View key={category} style={styles.categorySection}>
-                <Text style={styles.categoryTitle}>
-                  {category} ({categoryProducts.length})
-                </Text>
-                {categoryProducts.map((product) => (
-                  <View key={product.id} style={styles.productCard}>
-                    <View style={styles.productInfo}>
-                      <Text style={styles.productName}>{product.name}</Text>
-                      <Text style={styles.productPrice}>RD${product.price}</Text>
+            Object.entries(categorizedProducts).map(
+              ([category, categoryProducts]) => (
+                <View
+                  key={category}
+                  style={styles.categorySection as StyleProp<ViewStyle>}
+                >
+                  <Text style={styles.categoryTitle}>
+                    {category} ({categoryProducts.length})
+                  </Text>
+                  {categoryProducts.map((product) => (
+                    <View key={product.id} style={styles.productCard}>
+                      <View style={styles.productInfo}>
+                        <Text style={styles.productName}>{product.name}</Text>
+                        <Text style={styles.productPrice}>
+                          RD${product.price}
+                        </Text>
+                      </View>
+                      <View style={styles.productActions}>
+                        <TouchableOpacity
+                          style={[styles.actionButton, styles.editButton]}
+                          onPress={() => openEditModal(product)}
+                        >
+                          <Edit size={16} color="white" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.actionButton, styles.deleteButton]}
+                          onPress={() => deleteProduct(product)}
+                        >
+                          <Trash2 size={16} color="white" />
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                    <View style={styles.productActions}>
-                      <TouchableOpacity
-                        style={[styles.actionButton, styles.editButton]}
-                        onPress={() => openEditModal(product)}
-                      >
-                        <Edit size={16} color="white" />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.actionButton, styles.deleteButton]}
-                        onPress={() => deleteProduct(product)}
-                      >
-                        <Trash2 size={16} color="white" />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            ))
+                  ))}
+                </View>
+              )
+            )
           )}
         </ScrollView>
       )}
@@ -350,7 +390,9 @@ export default function ProductsScreen() {
                 style={styles.input}
                 placeholder="Ej: Burger Clásica"
                 value={formData.name}
-                onChangeText={(text) => setFormData({ ...formData, name: text })}
+                onChangeText={(text) =>
+                  setFormData({ ...formData, name: text })
+                }
               />
             </View>
 
@@ -360,7 +402,9 @@ export default function ProductsScreen() {
                 style={styles.input}
                 placeholder="Ej: 325"
                 value={formData.price}
-                onChangeText={(text) => setFormData({ ...formData, price: text })}
+                onChangeText={(text) =>
+                  setFormData({ ...formData, price: text })
+                }
                 keyboardType="numeric"
               />
             </View>
@@ -374,14 +418,16 @@ export default function ProductsScreen() {
                       key={category}
                       style={[
                         styles.categoryButton,
-                        formData.category === category && styles.categoryButtonActive,
+                        formData.category === category &&
+                          styles.categoryButtonActive,
                       ]}
                       onPress={() => setFormData({ ...formData, category })}
                     >
                       <Text
                         style={[
                           styles.categoryButtonText,
-                          formData.category === category && styles.categoryButtonTextActive,
+                          formData.category === category &&
+                            styles.categoryButtonTextActive,
                         ]}
                       >
                         {category}
@@ -389,9 +435,10 @@ export default function ProductsScreen() {
                     </TouchableOpacity>
                   ))}
                 </View>
-                <TouchableOpacity 
-                  style={styles.addCategoryButton} 
-                  onPress={openCategoryModal}
+
+                <TouchableOpacity
+                  style={styles.addCategoryButton}
+                  onPress={openCategorySheet}
                 >
                   <Plus size={16} color={theme.colors.primaryDark} />
                   <Text style={styles.addCategoryText}>Nueva Categoría</Text>
@@ -404,60 +451,65 @@ export default function ProductsScreen() {
             <TouchableOpacity style={styles.cancelButton} onPress={closeModal}>
               <Text style={styles.cancelButtonText}>Cancelar</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.saveButton} onPress={saveProduct}>
+            <TouchableOpacity
+              disabled={!isFormValid}
+              onPress={isFormValid ? saveProduct : undefined}
+              style={[
+                styles.saveButton,
+                !isFormValid && styles.saveButtonDisabled, // 👈 gris/inactivo
+              ]}
+            >
               <Save size={20} color="white" />
               <Text style={styles.saveButtonText}>
                 {editingProduct ? 'Actualizar' : 'Guardar'}
               </Text>
             </TouchableOpacity>
           </View>
-        </SafeAreaView>
-      </Modal>
 
-      {/* Modal para agregar nueva categoría */}
-      <Modal
-        visible={showCategoryModal}
-        animationType="fade"
-        transparent={true}
-      >
-        <View style={styles.categoryModalOverlay}>
-          <View style={styles.categoryModalContent}>
-            <Text style={styles.categoryModalTitle}>Nueva Categoría</Text>
-            
-            <TextInput
-              style={styles.categoryInput}
-              placeholder="Nombre de la categoría"
-              value={newCategoryName}
-              onChangeText={setNewCategoryName}
-              autoFocus={true}
-            />
+          {/* === Sheet interno: Nueva Categoría (NO es otro Modal) === */}
+          {showCategorySheet && (
+            <View style={styles.sheetOverlay}>
+              <TouchableOpacity
+                style={styles.sheetBackdrop}
+                activeOpacity={1}
+                onPress={closeCategorySheet}
+              />
+              <View style={styles.sheetCard}>
+                <Text style={styles.categoryModalTitle}>Nueva Categoría</Text>
 
-            <View style={styles.categoryModalActions}>
-              <TouchableOpacity 
-                style={styles.categoryModalCancel} 
-                onPress={closeCategoryModal}
-              >
-                <Text style={styles.categoryModalCancelText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.categoryModalSave} 
-                onPress={addNewCategory}
-              >
-                <Text style={styles.categoryModalSaveText}>Agregar</Text>
-              </TouchableOpacity>
+                <TextInput
+                  style={[styles.categoryInput, { backgroundColor: 'white' }]}
+                  placeholder="Nombre de la categoría"
+                  value={newCategoryName}
+                  onChangeText={setNewCategoryName}
+                  autoFocus
+                />
+
+                <View style={styles.categoryModalActions}>
+                  <TouchableOpacity
+                    style={styles.categoryModalCancel}
+                    onPress={closeCategorySheet}
+                  >
+                    <Text style={styles.categoryModalCancelText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.categoryModalSave}
+                    onPress={addNewCategory}
+                  >
+                    <Text style={styles.categoryModalSaveText}>Agregar</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-          </View>
-        </View>
+          )}
+        </SafeAreaView>
       </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
+  container: { flex: 1, backgroundColor: '#F9FAFB' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -467,33 +519,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  menuButton: {
-    padding: 8,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: theme.colors.primaryDark,
-  },
-  placeholder: {
-    width: 40,
-  },
+  menuButton: { padding: 8 },
+  headerContent: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  title: { fontSize: 20, fontWeight: 'bold', color: theme.colors.primaryDark },
+  placeholder: { width: 40 },
+
   accessDenied: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 32,
   },
-  accessDeniedText: {
-    fontSize: 18,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
+  accessDeniedText: { fontSize: 18, color: '#6B7280', textAlign: 'center' },
+
   statsContainer: {
     padding: 16,
     backgroundColor: '#ECFDF5',
@@ -506,6 +544,7 @@ const styles = StyleSheet.create({
     color: '#065F46',
     textAlign: 'center',
   },
+
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -516,14 +555,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 8,
   },
-  addButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  content: {
-    flex: 1,
-  },
+  addButtonText: { color: 'white', fontSize: 16, fontWeight: '600' },
+
+  content: { flex: 1 },
+
   emptyState: {
     flex: 1,
     justifyContent: 'center',
@@ -544,9 +579,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
-  categorySection: {
-    marginBottom: 24,
-  },
+
+  categorySection: {},
   categoryTitle: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -557,7 +591,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: '#E5E7EB',
+    marginVertical: 16,
   },
+
   productCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -573,24 +609,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
   },
-  productInfo: {
-    flex: 1,
-  },
+  productInfo: { flex: 1 },
   productName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1F2937',
     marginBottom: 4,
   },
-  productPrice: {
-    fontSize: 14,
-    color: '#059669',
-    fontWeight: '500',
-  },
-  productActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
+  productPrice: { fontSize: 14, color: '#059669', fontWeight: '500' },
+  productActions: { flexDirection: 'row', gap: 8 },
   actionButton: {
     width: 36,
     height: 36,
@@ -598,16 +625,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  editButton: {
-    backgroundColor: '#3B82F6',
-  },
-  deleteButton: {
-    backgroundColor: '#DC2626',
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
+  editButton: { backgroundColor: '#3B82F6' },
+  deleteButton: { backgroundColor: '#DC2626' },
+
+  // Modal de producto
+  modalContainer: { flex: 1, backgroundColor: 'white' },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -616,27 +638,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-  closeButton: {
-    padding: 8,
-  },
-  modalContent: {
-    flex: 1,
-    padding: 16,
-  },
-  formGroup: {
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-  },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#1F2937' },
+  closeButton: { padding: 8 },
+  modalContent: { flex: 1, padding: 16 },
+
+  formGroup: { marginBottom: 24 },
+  label: { fontSize: 16, fontWeight: '600', color: '#374151', marginBottom: 8 },
   input: {
     borderWidth: 1,
     borderColor: '#D1D5DB',
@@ -645,14 +652,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: 'white',
   },
-  categoryContainer: {
-    gap: 12,
-  },
-  categoryButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
+
+  categoryContainer: { gap: 12 },
+  categoryButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   categoryButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -665,14 +667,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
     borderColor: theme.colors.primary,
   },
-  categoryButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  categoryButtonTextActive: {
-    color: 'white',
-  },
+  categoryButtonText: { fontSize: 14, fontWeight: '500', color: '#6B7280' },
+  categoryButtonTextActive: { color: 'white' },
+
   addCategoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -690,6 +687,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: theme.colors.primaryDark,
   },
+
   modalActions: {
     flexDirection: 'row',
     padding: 16,
@@ -705,11 +703,7 @@ const styles = StyleSheet.create({
     borderColor: '#D1D5DB',
     alignItems: 'center',
   },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
+  cancelButtonText: { fontSize: 16, fontWeight: '600', color: '#6B7280' },
   saveButton: {
     flex: 1,
     flexDirection: 'row',
@@ -720,31 +714,32 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 8,
   },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
+  saveButtonText: { fontSize: 16, fontWeight: '600', color: 'white' },
+  saveButtonDisabled: {
+    backgroundColor: '#858b92', // gris
+    opacity: 0.7,
   },
-  // Estilos para modal de categoría
-  categoryModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
+  // === Sheet interno de Nueva Categoría ===
+  sheetOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.35)',
   },
-  categoryModalContent: {
+  sheetBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  sheetCard: {
     backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 24,
-    width: '100%',
-    maxWidth: 400,
-    elevation: 8,
+    padding: 16,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    elevation: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: -2 },
+    shadowRadius: 8,
+    height: 220,
   },
+
+  // Reutilizamos estilos del modal de categoría anterior
   categoryModalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -760,10 +755,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 24,
   },
-  categoryModalActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
+  categoryModalActions: { flexDirection: 'row', gap: 12 },
   categoryModalCancel: {
     flex: 1,
     padding: 12,
@@ -784,9 +776,5 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primaryDark,
     alignItems: 'center',
   },
-  categoryModalSaveText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-  },
+  categoryModalSaveText: { fontSize: 16, fontWeight: '600', color: 'white' },
 });
