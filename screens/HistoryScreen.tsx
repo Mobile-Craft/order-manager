@@ -34,7 +34,9 @@ export default function HistoryScreen() {
           <View style={styles.placeholder} />
         </View>
         <View style={styles.accessDenied}>
-          <Text style={styles.accessDeniedText}>Solo los administradores pueden ver el historial</Text>
+          <Text style={styles.accessDeniedText}>
+            Solo los administradores pueden ver el historial
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -57,10 +59,10 @@ export default function HistoryScreen() {
 
   const formatDuration = (minutes?: number) => {
     if (!minutes || minutes <= 0) return 'N/A';
-    
+
     const hours = Math.floor(minutes / 60);
     const mins = Math.round(minutes % 60);
-    
+
     if (hours > 0) {
       return `${hours}h ${mins}m`;
     }
@@ -77,7 +79,10 @@ export default function HistoryScreen() {
     return acc;
   }, {} as Record<string, typeof deliveredOrders>);
 
-  const totalRevenue = deliveredOrders.reduce((sum, order) => sum + order.total, 0);
+  const totalRevenue = deliveredOrders.reduce(
+    (sum, order) => sum + order.total,
+    0
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -98,7 +103,9 @@ export default function HistoryScreen() {
       <View style={styles.statsContainer}>
         <View style={styles.statItem}>
           <Calendar size={20} color="#059669" />
-          <Text style={styles.statText}>{deliveredOrders.length} órdenes entregadas</Text>
+          <Text style={styles.statText}>
+            {deliveredOrders.length} órdenes entregadas
+          </Text>
         </View>
         <View style={styles.statItem}>
           <DollarSign size={20} color="#059669" />
@@ -113,7 +120,9 @@ export default function HistoryScreen() {
           {deliveredOrders.length === 0 ? (
             <View style={styles.emptyState}>
               <History size={64} color="#D1D5DB" />
-              <Text style={styles.emptyTitle}>No hay órdenes en el historial</Text>
+              <Text style={styles.emptyTitle}>
+                No hay órdenes en el historial
+              </Text>
               <Text style={styles.emptySubtitle}>
                 Las órdenes entregadas aparecerán aquí
               </Text>
@@ -125,15 +134,23 @@ export default function HistoryScreen() {
                 <View key={date} style={styles.dateSection}>
                   <Text style={styles.dateTitle}>{date}</Text>
                   {orders
-                    .sort((a, b) => new Date(b.delivered_at || b.created_at).getTime() - new Date(a.delivered_at || a.created_at).getTime())
-                    .map(order => (
+                    .sort(
+                      (a, b) =>
+                        new Date(b.delivered_at || b.created_at).getTime() -
+                        new Date(a.delivered_at || a.created_at).getTime()
+                    )
+                    .map((order) => (
                       <View key={order.id} style={styles.historyOrderCard}>
                         <View style={styles.orderHeader}>
                           <Text style={styles.orderId}>{order.order_code}</Text>
-                          <Text style={styles.orderTime}>{formatTime(order.delivered_at || order.created_at)}</Text>
+                          <Text style={styles.orderTime}>
+                            {formatTime(order.delivered_at || order.created_at)}
+                          </Text>
                         </View>
 
-                        <Text style={styles.customerName}>{order.customer_name}</Text>
+                        <Text style={styles.customerName}>
+                          {order.customer_name}
+                        </Text>
 
                         <View style={styles.itemsList}>
                           {order.items.map((item, index) => (
@@ -141,22 +158,32 @@ export default function HistoryScreen() {
                               <Text style={styles.itemText}>
                                 {item.quantity}x {item.name}
                               </Text>
-                              <Text style={styles.itemPrice}>RD${item.price * item.quantity}</Text>
+                              <Text style={styles.itemPrice}>
+                                RD${item.price * item.quantity}
+                              </Text>
                             </View>
                           ))}
                         </View>
 
                         <View style={styles.orderFooter}>
-                          <Text style={styles.total}>Total: RD${order.total}</Text>
+                          <Text style={styles.total}>
+                            Total: RD${order.total}
+                          </Text>
                           <View style={styles.paymentBadge}>
-                            <Text style={styles.paymentText}>{order.payment_method}</Text>
+                            <Text style={styles.paymentText}>
+                              {order.payment_method}
+                            </Text>
                           </View>
                         </View>
 
-                        {order.duration_minutes && (
+                        {(order.duration_minutes ?? 0) > 0 && (
                           <View style={styles.durationContainer}>
-                            <Text style={styles.durationLabel}>Tiempo de entrega:</Text>
-                            <Text style={styles.durationValue}>{formatDuration(order?.duration_minutes)}</Text>
+                            <Text style={styles.durationLabel}>
+                              Tiempo de entrega:
+                            </Text>
+                            <Text style={styles.durationValue}>
+                              {formatDuration(order?.duration_minutes ?? 0)}
+                            </Text>
                           </View>
                         )}
                       </View>

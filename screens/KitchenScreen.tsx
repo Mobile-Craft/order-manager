@@ -7,7 +7,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
 } from 'react-native';
-import { ChefHat, LogOut } from 'lucide-react-native';
+import { ChefHat, LogOut, Menu } from 'lucide-react-native';
 import { useOrders } from '@/context/OrderContext';
 import { useAuth } from '@/context/AuthContext';
 import { OrderCard } from '@/components/OrderCard';
@@ -15,34 +15,50 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { theme } from '@/lib/theme';
 import { useAssets } from 'expo-asset';
 import { Image } from 'react-native';
-
+import { DrawerActions, useNavigation } from '@react-navigation/native';
 
 export default function KitchenScreen() {
+  const navigation = useNavigation();
+
   const [assets, error] = useAssets([
     require('@/assets/images/pendingIcon.png'),
     require('@/assets/images/inProcessIcon.png'),
     require('@/assets/images/doneIcon.png'),
   ]);
   const { orders, updateOrderStatus, isLoading } = useOrders();
-  const { logout } = useAuth();
+
+  const { logout, isAdmin } = useAuth();
 
   // Solo mostrar órdenes que no están entregadas
-  const activeOrders = orders.filter(order => order.status !== 'Entregada');
+  const activeOrders = orders.filter((order) => order.status !== 'Entregada');
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <ChefHat size={28} color={theme.colors.primaryDark} />
-          <Text style={styles.title}>Vista Cocina</Text>
+      {isAdmin ? (
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+          >
+            <Menu size={24} color={theme.colors.primaryDark} />
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            {/* <History size={28} color={theme.colors.primaryDark} /> */}
+            <Text style={styles.title}>Historial</Text>
+          </View>
+          <View style={styles.placeholder} />
         </View>
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={logout}
-        >
-          <LogOut size={20} color={theme.colors.primaryDark} />
-        </TouchableOpacity>
-      </View>
+      ) : (
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <ChefHat size={28} color={theme.colors.primaryDark} />
+            <Text style={styles.title}>Vista Cocina</Text>
+          </View>
+          <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+            <LogOut size={20} color={theme.colors.primaryDark} />
+          </TouchableOpacity>
+        </View>
+      )}
 
       <View style={styles.statsContainer}>
         <Text style={styles.statsText}>
@@ -65,7 +81,8 @@ export default function KitchenScreen() {
           ) : (
             <>
               {/* Órdenes Pendientes */}
-              {activeOrders.filter(order => order.status === 'Pendiente').length > 0 && (
+              {activeOrders.filter((order) => order.status === 'Pendiente')
+                .length > 0 && (
                 <View style={styles.section}>
                   <View style={styles.sectionTitleRow}>
                     {assets && assets[0] && (
@@ -76,13 +93,19 @@ export default function KitchenScreen() {
                       />
                     )}
                     <Text style={styles.sectionTitleText}>
-                      Pendientes ({activeOrders.filter(order => order.status === 'Pendiente').length})
+                      Pendientes (
+                      {
+                        activeOrders.filter(
+                          (order) => order.status === 'Pendiente'
+                        ).length
+                      }
+                      )
                     </Text>
                   </View>
 
                   {activeOrders
-                    .filter(order => order.status === 'Pendiente')
-                    .map(order => (
+                    .filter((order) => order.status === 'Pendiente')
+                    .map((order) => (
                       <OrderCard
                         key={order.id}
                         order={order}
@@ -94,7 +117,8 @@ export default function KitchenScreen() {
               )}
 
               {/* Órdenes En Proceso */}
-              {activeOrders.filter(order => order.status === 'En proceso').length > 0 && (
+              {activeOrders.filter((order) => order.status === 'En proceso')
+                .length > 0 && (
                 <View style={styles.section}>
                   <View style={styles.sectionTitleRow}>
                     {assets && assets[1] && (
@@ -104,12 +128,20 @@ export default function KitchenScreen() {
                         resizeMode="contain"
                       />
                     )}
-                    <Text style={styles.sectionTitleText}>En Proceso ({activeOrders.filter(order => order.status === 'En proceso').length})</Text>
+                    <Text style={styles.sectionTitleText}>
+                      En Proceso (
+                      {
+                        activeOrders.filter(
+                          (order) => order.status === 'En proceso'
+                        ).length
+                      }
+                      )
+                    </Text>
                   </View>
 
                   {activeOrders
-                    .filter(order => order.status === 'En proceso')
-                    .map(order => (
+                    .filter((order) => order.status === 'En proceso')
+                    .map((order) => (
                       <OrderCard
                         key={order.id}
                         order={order}
@@ -121,7 +153,8 @@ export default function KitchenScreen() {
               )}
 
               {/* Órdenes Terminadas */}
-              {activeOrders.filter(order => order.status === 'Terminada').length > 0 && (
+              {activeOrders.filter((order) => order.status === 'Terminada')
+                .length > 0 && (
                 <View style={styles.section}>
                   <View style={styles.sectionTitleRow}>
                     {assets && assets[2] && (
@@ -131,12 +164,20 @@ export default function KitchenScreen() {
                         resizeMode="contain"
                       />
                     )}
-                    <Text style={styles.sectionTitleText}>Terminadas - Listas para entrega ({activeOrders.filter(order => order.status === 'Terminada').length})</Text>
+                    <Text style={styles.sectionTitleText}>
+                      Terminadas - Listas para entrega (
+                      {
+                        activeOrders.filter(
+                          (order) => order.status === 'Terminada'
+                        ).length
+                      }
+                      )
+                    </Text>
                   </View>
 
                   {activeOrders
-                    .filter(order => order.status === 'Terminada')
-                    .map(order => (
+                    .filter((order) => order.status === 'Terminada')
+                    .map((order) => (
                       <OrderCard
                         key={order.id}
                         order={order}
@@ -171,6 +212,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  placeholder: {
+    width: 40,
   },
   title: {
     fontSize: 20,
@@ -239,5 +283,8 @@ const styles = StyleSheet.create({
   sectionIcon: {
     width: 24,
     height: 24,
+  },
+  menuButton: {
+    padding: 8,
   },
 });

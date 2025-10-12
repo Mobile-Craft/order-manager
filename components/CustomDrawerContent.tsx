@@ -10,7 +10,7 @@ import { Image } from 'react-native';
 export function CustomDrawerContent(props: DrawerContentComponentProps) {
   const { user, logout, isAdmin } = useAuth();
   const [assets, error] = useAssets([
-    require('@/assets/images/logo.png'),
+    require('@/assets/images/logo2.jpg'),
   ]);
 
   const menuItems = [
@@ -62,7 +62,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
               resizeMode="contain"
             />
           )}
-          <Text style={styles.title}>Crushed Burger</Text>
+          <Text style={styles.title}>Order Manager</Text>
           <Text style={styles.subtitle}>Sistema de Pedidos</Text>
         </View>
 

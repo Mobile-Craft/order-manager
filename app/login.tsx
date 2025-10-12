@@ -17,7 +17,7 @@ import { Image } from 'react-native';
 
 function LoginScreen() {
   const [assets, error] = useAssets([
-    require('@/assets/images/logo.png'),
+    require('@/assets/images/logo2.jpg'),
   ]);
   const { login } = useAuth();
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -56,7 +56,7 @@ function LoginScreen() {
               resizeMode="contain"
             />
           )}
-          <Text style={styles.title}>Crushed Burger</Text>
+          <Text style={styles.title}>Order Manager</Text>
           <Text style={styles.subtitle}>Sistema de Pedidos</Text>
         </View>
 
@@ -86,7 +86,7 @@ function LoginScreen() {
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Versión 1.0 • Crushed Burger 2024
+            Versión 1.0 • Elder Tavarez 2025
           </Text>
         </View>
       </View>
