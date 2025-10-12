@@ -22,7 +22,7 @@ export interface MenuItem {
   id: string;
   name: string;
   price: number;
-  category: 'Burgers' | 'Papas' | 'Bebidas' | 'Extras';
+  category: string;
 }
 
 export type UserRole = 'Personal' | 'Cocina' | 'Admin';

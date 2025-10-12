@@ -19,24 +19,43 @@ import { supabase } from '@/lib/supabase';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { theme } from '@/lib/theme';
 
-const CATEGORIES = ['Burgers', 'Papas', 'Bebidas', 'Extras'] as const;
-
 export default function ProductsScreen() {
   const navigation = useNavigation();
   const { isAdmin } = useAuth();
   const [products, setProducts] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<MenuItem | null>(null);
+  const [newCategoryName, setNewCategoryName] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     price: '',
-    category: 'Burgers' as MenuItem['category'],
+    category: '',
   });
 
   useEffect(() => {
     loadProducts();
+    loadCategories();
   }, []);
+
+  const loadCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('menu_items')
+        .select('category')
+        .order('category', { ascending: true });
+
+      if (error) throw error;
+      
+      // Obtener categorías únicas
+      const uniqueCategories = [...new Set(data?.map(item => item.category) || [])];
+      setCategories(uniqueCategories);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  };
 
   const loadProducts = async () => {
     try {
@@ -62,7 +81,7 @@ export default function ProductsScreen() {
     setFormData({
       name: '',
       price: '',
-      category: 'Burgers',
+      category: categories[0] || '',
     });
     setShowModal(true);
   };
@@ -83,8 +102,42 @@ export default function ProductsScreen() {
     setFormData({
       name: '',
       price: '',
-      category: 'Burgers',
+      category: categories[0] || '',
     });
+  };
+
+  const openCategoryModal = () => {
+    setNewCategoryName('');
+    setShowCategoryModal(true);
+  };
+
+  const closeCategoryModal = () => {
+    setShowCategoryModal(false);
+    setNewCategoryName('');
+  };
+
+  const addNewCategory = async () => {
+    if (!newCategoryName.trim()) {
+      Alert.alert('Error', 'El nombre de la categoría es requerido');
+      return;
+    }
+
+    if (categories.includes(newCategoryName.trim())) {
+      Alert.alert('Error', 'Esta categoría ya existe');
+      return;
+    }
+
+    // Agregar la nueva categoría a la lista local
+    const newCategories = [...categories, newCategoryName.trim()].sort();
+    setCategories(newCategories);
+    
+    // Actualizar el formulario si está abierto
+    if (showModal && !formData.category) {
+      setFormData(prev => ({ ...prev, category: newCategoryName.trim() }));
+    }
+
+    closeCategoryModal();
+    Alert.alert('Éxito', 'Nueva categoría agregada');
   };
 
   const validateForm = () => {
@@ -94,6 +147,10 @@ export default function ProductsScreen() {
     }
     if (!formData.price.trim() || isNaN(Number(formData.price)) || Number(formData.price) <= 0) {
       Alert.alert('Error', 'El precio debe ser un número válido mayor a 0');
+      return false;
+    }
+    if (!formData.category.trim()) {
+      Alert.alert('Error', 'Debes seleccionar una categoría');
       return false;
     }
     return true;
@@ -120,7 +177,7 @@ export default function ProductsScreen() {
         Alert.alert('Éxito', 'Producto actualizado correctamente');
       } else {
         // Crear nuevo producto
-        const newId = `${formData.category.toLowerCase()}_${Date.now()}`;
+        const newId = `${formData.category.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`;
         const { error } = await supabase
           .from('menu_items')
           .insert([{ ...productData, id: newId }]);
@@ -131,6 +188,7 @@ export default function ProductsScreen() {
 
       closeModal();
       loadProducts();
+      loadCategories(); // Recargar categorías por si se agregó una nueva
     } catch (error) {
       console.error('Error saving product:', error);
       Alert.alert('Error', 'No se pudo guardar el producto');
@@ -309,26 +367,35 @@ export default function ProductsScreen() {
 
             <View style={styles.formGroup}>
               <Text style={styles.label}>Categoría</Text>
-              <View style={styles.categoryButtons}>
-                {CATEGORIES.map((category) => (
-                  <TouchableOpacity
-                    key={category}
-                    style={[
-                      styles.categoryButton,
-                      formData.category === category && styles.categoryButtonActive,
-                    ]}
-                    onPress={() => setFormData({ ...formData, category })}
-                  >
-                    <Text
+              <View style={styles.categoryContainer}>
+                <View style={styles.categoryButtons}>
+                  {categories.map((category) => (
+                    <TouchableOpacity
+                      key={category}
                       style={[
-                        styles.categoryButtonText,
-                        formData.category === category && styles.categoryButtonTextActive,
+                        styles.categoryButton,
+                        formData.category === category && styles.categoryButtonActive,
                       ]}
+                      onPress={() => setFormData({ ...formData, category })}
                     >
-                      {category}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Text
+                        style={[
+                          styles.categoryButtonText,
+                          formData.category === category && styles.categoryButtonTextActive,
+                        ]}
+                      >
+                        {category}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TouchableOpacity 
+                  style={styles.addCategoryButton} 
+                  onPress={openCategoryModal}
+                >
+                  <Plus size={16} color={theme.colors.primaryDark} />
+                  <Text style={styles.addCategoryText}>Nueva Categoría</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </ScrollView>
@@ -345,6 +412,42 @@ export default function ProductsScreen() {
             </TouchableOpacity>
           </View>
         </SafeAreaView>
+      </Modal>
+
+      {/* Modal para agregar nueva categoría */}
+      <Modal
+        visible={showCategoryModal}
+        animationType="fade"
+        transparent={true}
+      >
+        <View style={styles.categoryModalOverlay}>
+          <View style={styles.categoryModalContent}>
+            <Text style={styles.categoryModalTitle}>Nueva Categoría</Text>
+            
+            <TextInput
+              style={styles.categoryInput}
+              placeholder="Nombre de la categoría"
+              value={newCategoryName}
+              onChangeText={setNewCategoryName}
+              autoFocus={true}
+            />
+
+            <View style={styles.categoryModalActions}>
+              <TouchableOpacity 
+                style={styles.categoryModalCancel} 
+                onPress={closeCategoryModal}
+              >
+                <Text style={styles.categoryModalCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.categoryModalSave} 
+                onPress={addNewCategory}
+              >
+                <Text style={styles.categoryModalSaveText}>Agregar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -542,6 +645,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: 'white',
   },
+  categoryContainer: {
+    gap: 12,
+  },
   categoryButtons: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -566,6 +672,23 @@ const styles = StyleSheet.create({
   },
   categoryButtonTextActive: {
     color: 'white',
+  },
+  addCategoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderWidth: 2,
+    borderColor: theme.colors.primaryDark,
+    borderStyle: 'dashed',
+    borderRadius: 8,
+    gap: 8,
+  },
+  addCategoryText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.primaryDark,
   },
   modalActions: {
     flexDirection: 'row',
@@ -598,6 +721,70 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
+  },
+  // Estilos para modal de categoría
+  categoryModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  categoryModalContent: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+  },
+  categoryModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  categoryInput: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 24,
+  },
+  categoryModalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  categoryModalCancel: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+  },
+  categoryModalCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  categoryModalSave: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: theme.colors.primaryDark,
+    alignItems: 'center',
+  },
+  categoryModalSaveText: {
     fontSize: 16,
     fontWeight: '600',
     color: 'white',
