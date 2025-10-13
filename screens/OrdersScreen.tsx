@@ -66,6 +66,12 @@ export default function OrdersScreen() {
   }, []);
 
   const loadMenu = async () => {
+    if (!user?.business?.id) {
+      setMenuError('No hay contexto de negocio disponible');
+      setMenuLoading(false);
+      return;
+    }
+
     try {
       setMenuLoading(true);
       setMenuError(null);
@@ -74,6 +80,7 @@ export default function OrdersScreen() {
       const { data, error } = await supabase
         .from('menu_items')
         .select('*')
+        .eq('business_id', user.business.id)
         .order('category', { ascending: true });
 
       if (error) {

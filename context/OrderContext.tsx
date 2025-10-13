@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, ReactNode } fr
 import { Order, OrderItem, SalesData } from '@/types/Order';
 import { supabase } from '@/lib/supabase';
 import { Audio } from 'expo-av';
+import { useAuth } from '@/context/AuthContext';
 
 /** =========================
  *  Tipos y Helpers de Filtros
@@ -156,6 +157,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     deliveredOrders: [],
     isLoading: true,
   });
+  const { user } = useAuth();
 
   // Cargar órdenes iniciales
   useEffect(() => {
@@ -198,6 +200,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   }
 
   const loadOrders = async () => {
+    if (!user?.business?.id) {
+      dispatch({ type: 'SET_LOADING', payload: false });
+      return;
+    }
+
     try {
       console.log('Loading orders from Supabase...');
 
@@ -206,6 +213,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         .from('orders')
         .select('*')
         .neq('status', 'Entregada')
+        .eq('business_id', user.business.id)
         .order('created_at', { ascending: true });
 
       if (activeError) {
@@ -218,6 +226,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         .from('orders')
         .select('*')
         .eq('status', 'Entregada')
+        .eq('business_id', user.business.id)
         .order('delivered_at', { ascending: false });
 
       if (deliveredError) {
@@ -245,10 +254,15 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   };
 
   const addOrder = async (customerName: string, items: OrderItem[]) => {
+    if (!user?.business?.id) {
+      throw new Error('No business context available');
+    }
+
     try {
       const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
       const newOrder: Omit<Order, 'id'> = {
+        business_id: user.business.id,
         customer_name: customerName,
         items,
         total,

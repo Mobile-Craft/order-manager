@@ -58,10 +58,13 @@ export default function ProductsScreen() {
   }, []);
 
   const loadCategories = async () => {
+    if (!user?.business?.id) return;
+
     try {
       const { data, error } = await supabase
         .from('menu_items')
         .select('category')
+        .eq('business_id', user.business.id)
         .order('category', { ascending: true });
 
       if (error) throw error;
@@ -76,11 +79,17 @@ export default function ProductsScreen() {
   };
 
   const loadProducts = async () => {
+    if (!user?.business?.id) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('menu_items')
         .select('*')
+        .eq('business_id', user.business.id)
         .order('category', { ascending: true })
         .order('name', { ascending: true });
 
@@ -189,9 +198,14 @@ export default function ProductsScreen() {
 
   const saveProduct = async () => {
     if (!validateForm()) return;
+    if (!user?.business?.id) {
+      Alert.alert('Error', 'No hay contexto de negocio disponible');
+      return;
+    }
 
     try {
       const productData = {
+        business_id: user.business.id,
         name: formData.name.trim(),
         price: Number(formData.price),
         category: formData.category,
