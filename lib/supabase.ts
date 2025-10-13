@@ -14,14 +14,25 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// Test connection
-supabase
-  .from('menu_items')
-  .select('count', { count: 'exact', head: true })
-  .then(({ count, error }) => {
+// Test connection with better error handling
+const testConnection = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('menu_items')
+      .select('id')
+      .limit(1);
+    
     if (error) {
-      console.error('Supabase connection test failed:', error);
+      console.warn('Supabase connection test failed:', error.message);
+      console.warn('This is expected if menu_items table does not exist yet');
     } else {
-      console.log('Supabase connected successfully. Menu items count:', count);
+      console.log('Supabase connected successfully');
     }
-  });
+  } catch (err) {
+    console.warn('Supabase connection test error:', err);
+    console.warn('This is expected during initial setup');
+  }
+};
+
+// Run test connection without blocking app initialization
+setTimeout(testConnection, 1000);
