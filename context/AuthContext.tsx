@@ -70,6 +70,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (error) {
+        console.log('👤 No profile found for user, checking for invitations...');
+        
+        // Verificar si hay una invitación pendiente para este usuario
+        const { data: invitation, error: invitationError } = await supabase
+          .from('business_invitations')
+          .select('email, status, expires_at, business_id, role')
+          .eq('email', authUser.email?.toLowerCase())
+          .eq('status', 'pending')
+          .gt('expires_at', new Date().toISOString());
+
+        console.log('🔍 Checking invitation in loadUserProfile:', { invitation, invitationError });
+
+        if (invitation && invitation.length > 0 && !invitationError) {
+          console.log('🎉 Found pending invitation, user needs to complete profile');
+        } else {
+          console.log('ℹ️ No pending invitation found, user needs to create business or be invited');
+        }
+
         // Es normal que NO exista aún hasta completar empresa
         setUser({
           id: authUser.id,
@@ -161,17 +179,78 @@ const completeRegistration = async (fullName: string, businessName: string) => {
 
   // Completar registro de usuario invitado
   const completeInvitedUserRegistration = async (fullName: string) => {
-    const { data, error } = await supabase
-      .rpc('complete_invited_user_registration', {
-        full_name_param: fullName
-      });
+    try {
+      const currentUser = await supabase.auth.getUser();
+      
+      if (!currentUser.data.user?.email) {
+        throw new Error('Usuario no autenticado');
+      }
 
-    if (error) throw error;
-    if (!data.success) throw new Error(data.message);
+      const userEmail = currentUser.data.user.email.toLowerCase();
+      console.log('🔍 Buscando invitación para:', userEmail);
 
-    // Recargar el perfil del usuario
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (authUser) await loadUserProfile(authUser);
+      const { data: invitations, error: invitationError } = await supabase
+        .from('business_invitations')
+        .select('id, email, business_id, role, status, expires_at')
+        .eq('email', userEmail)
+        .eq('status', 'pending')
+        .gt('expires_at', new Date().toISOString());
+
+      console.log('📋 Resultado de búsqueda de invitación:', { invitations, invitationError });
+
+      const invitation = invitations?.[0]; // Tomar la primera invitación válida
+
+      if (invitationError || !invitation) {
+        console.log('❌ Invitation error:', invitationError);
+        console.log('🔍 Looking for email:', userEmail);
+        
+        // Intentar obtener todas las invitaciones para debug (sin filtros complicados)
+        const { data: allInvitations, error: allError } = await supabase
+          .from('business_invitations')
+          .select('email, status, expires_at, created_at')
+          .eq('email', userEmail);
+        
+        console.log('📊 All invitations for this email:', allInvitations);
+        console.log('📊 All invitations error:', allError);
+        
+        // También verificar todas las invitaciones (primeros 5 para debug)
+        const { data: sampleInvitations } = await supabase
+          .from('business_invitations')
+          .select('email, status, expires_at')
+          .limit(5);
+        
+        console.log('📊 Sample invitations in database:', sampleInvitations);
+        
+        throw new Error('No se encontró una invitación válida para este usuario. Asegúrate de haber sido invitado por un administrador.');
+      }
+
+      // Crear perfil de usuario
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .insert([{
+          user_id: currentUser.data.user.id,
+          business_id: invitation.business_id,
+          full_name: fullName.trim(),
+          role: invitation.role,
+        }]);
+
+      if (profileError) throw profileError;
+
+      // Marcar invitación como completada
+      const { error: updateError } = await supabase
+        .from('business_invitations')
+        .update({ status: 'completed' })
+        .eq('id', invitation.id);
+
+      if (updateError) console.warn('Warning updating invitation:', updateError);
+
+      // Recargar el perfil del usuario
+      await loadUserProfile(currentUser.data.user);
+      
+    } catch (error: any) {
+      console.error('Error in completeInvitedUserRegistration:', error);
+      throw error;
+    }
   };
 
   // Verificar si el usuario es un invitado pendiente

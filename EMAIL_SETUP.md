@@ -1,6 +1,121 @@
-# Configuración del Sistema de Emails para Invitaciones
+# 📧 Configuración de Correos de Invitación - Order Manager
 
-Este documento explica cómo configurar el sistema de emails automáticos para las invitaciones de usuarios.
+## 🎨 Template Diseñado
+
+He creado un hermoso template de correo que coincide con el diseño de tu app Order Manager:
+
+### ✨ Características del Template:
+- **Colores de tu app**: Azul primario (#00AEEF) y azul oscuro (#007FB3)
+- **Diseño moderno**: Gradientes, sombras y tipografía Inter
+- **Responsive**: Se ve perfecto en móvil y desktop
+- **Información completa**: Incluye todos los datos de la invitación
+- **Pasos claros**: Proceso visual paso a paso
+- **Call-to-action**: Botón para abrir la app directamente
+
+## ⚙️ Configuración Requerida en Supabase Dashboard
+
+### 1. **URL Configuration** (Authentication > URL Configuration)
+
+**Site URL:**
+```
+myapp://
+```
+
+**Redirect URLs:** (agregar una por línea)
+```
+myapp://auth/callback
+myapp://invitation
+http://localhost:3000/auth/callback
+```
+
+### 2. **Email Template** (Authentication > Email Templates > Magic Link)
+
+**Subject:**
+```
+Invitación a {{.Data.business_name}} - Order Manager
+```
+
+**Body (HTML):**
+- Copia el contenido completo de `supabase/email-templates/invitation-template.html`
+- Pégalo en el campo "Body" del template
+
+**Body (Text):** (opcional, para clientes sin HTML)
+- Copia el contenido de `supabase/email-templates/invitation-template.txt`
+
+### 3. **Email Provider** (Authentication > Settings > Email)
+
+Asegúrate de que tienes configurado un proveedor de correo:
+- **Por defecto**: Supabase usa su propio servicio (limitado)
+- **Recomendado**: Configura SendGrid, Mailgun, o AWS SES para producción
+
+## 🎯 Variables Disponibles en el Template
+
+El template usa estas variables que se envían desde tu código:
+
+- `{{.Email}}` - Email del invitado
+- `{{.Data.business_name}}` - Nombre del negocio
+- `{{.Data.role}}` - Rol asignado (Cajero, Cocina, etc.)
+- `{{.Data.invited_by_name}}` - Nombre del administrador
+- `{{.ConfirmationURL}}` - Link para abrir la app
+
+## 🚀 Resultado Final
+
+El correo incluirá:
+
+1. **Header atractivo** con el logo de Order Manager
+2. **Información de la invitación** en una tarjeta destacada
+3. **Proceso paso a paso** con numeración visual
+4. **Botón para abrir la app** si está instalada
+5. **Información importante** en caja de advertencia
+6. **Firma personalizada** del administrador que invita
+7. **Footer profesional** con branding de Order Manager
+
+## 🎨 Preview del Diseño
+
+```
+┌─────────────────────────────────────┐
+│  📱 Order Manager                   │
+│  🎉 ¡Has sido invitado!            │
+│  Únete al equipo y comienza...     │
+├─────────────────────────────────────┤
+│                                     │
+│  ¡Hola!                            │
+│                                     │
+│  ┌─────────────────────────────┐   │
+│  │     [NOMBRE NEGOCIO]        │   │
+│  │       [CAJERO]              │   │
+│  │  Invitado por [ADMIN]       │   │
+│  └─────────────────────────────┘   │
+│                                     │
+│  📱 Proceso de Registro             │
+│  ┌─────────────────────────────┐   │
+│  │ 1️⃣ Descarga Order Manager   │   │
+│  │ 2️⃣ Crear Cuenta Nueva       │   │
+│  │ 3️⃣ Configura tu Contraseña  │   │
+│  │ 4️⃣ Verifica tu Email        │   │
+│  │ 5️⃣ Completa tu Perfil       │   │
+│  └─────────────────────────────┘   │
+│                                     │
+│    [🚀 Abrir Order Manager]        │
+│                                     │
+│  ⚠️ Información Importante          │
+│  • Usa exactamente este email      │
+│  • Expira en 7 días                │
+│                                     │
+├─────────────────────────────────────┤
+│  Order Manager                      │
+│  Sistema de gestión...              │
+└─────────────────────────────────────┘
+```
+
+## ✅ Pasos para Activar
+
+1. **Aplicar configuración en Supabase** (URLs y template)
+2. **Probar enviando una invitación** desde tu app
+3. **Verificar que el correo llegue** con el diseño correcto
+4. **Probar el flujo completo** de registro
+
+¡El sistema está listo para enviar correos hermosos y profesionales! 🎉
 
 ## Problema Identificado
 

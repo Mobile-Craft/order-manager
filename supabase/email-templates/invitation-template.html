@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invitación a {{.Data.business_name}} - Order Manager</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #00AEEF 0%, #007FB3 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="25" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="25" cy="75" r="0.5" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+            z-index: 1;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .logo {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .greeting {
+            font-size: 18px;
+            color: #1f2937;
+            margin-bottom: 24px;
+            font-weight: 500;
+        }
+        
+        .invitation-card {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 1px solid #00AEEF20;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+            text-align: center;
+        }
+        
+        .business-info {
+            margin-bottom: 20px;
+        }
+        
+        .business-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #00AEEF;
+            margin-bottom: 4px;
+        }
+        
+        .role-badge {
+            display: inline-block;
+            background: #00AEEF;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .invited-by {
+            margin-top: 16px;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        .steps-container {
+            background: #fff;
+            border: 2px solid #f3f4f6;
+            border-radius: 12px;
+            margin: 32px 0;
+            overflow: hidden;
+        }
+        
+        .steps-header {
+            background: #1f2937;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .steps-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .steps-subtitle {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .step {
+            padding: 20px;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+        
+        .step:last-child {
+            border-bottom: none;
+        }
+        
+        .step-number {
+            background: #00AEEF;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .step-content {
+            flex: 1;
+        }
+        
+        .step-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+        
+        .step-description {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+        
+        .cta-container {
+            text-align: center;
+            margin: 32px 0;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #00AEEF 0%, #007FB3 100%);
+            color: white;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 174, 239, 0.3);
+            transition: all 0.2s ease;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 8px -1px rgba(0, 174, 239, 0.4);
+        }
+        
+        .warning-box {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-left: 4px solid #f59e0b;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 24px 0;
+        }
+        
+        .warning-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .warning-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .warning-list li {
+            color: #92400e;
+            margin: 8px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .warning-list li::before {
+            content: '•';
+            color: #f59e0b;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+        
+        .email-highlight {
+            background: #00AEEF;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        
+        .signature {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .signature-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .signature-business {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+        
+        .footer {
+            background: #f8fafc;
+            color: #6b7280;
+            padding: 24px 30px;
+            text-align: center;
+            font-size: 12px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .footer-logo {
+            color: #00AEEF;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .footer p {
+            margin: 4px 0;
+        }
+        
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #e5e7eb, transparent);
+            margin: 24px 0;
+        }
+        
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .business-name {
+                font-size: 20px;
+            }
+            
+            .step {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <div class="logo">📱 Order Manager</div>
+                <h1>🎉 ¡Has sido invitado!</h1>
+                <p>Únete al equipo y comienza a trabajar</p>
+            </div>
+        </div>
+        
+        <!-- Content -->
+        <div class="content">
+            <div class="greeting">¡Hola!</div>
+            
+            <p>Es un placer informarte que has sido seleccionado para unirte a nuestro equipo. ¡Estamos emocionados de tenerte a bordo!</p>
+            
+            <!-- Invitation Card -->
+            <div class="invitation-card">
+                <div class="business-info">
+                    <div class="business-name">{{.Data.business_name}}</div>
+                    <div class="role-badge">{{.Data.role}}</div>
+                    <div class="invited-by">Invitado por <strong>{{.Data.invited_by_name}}</strong></div>
+                </div>
+            </div>
+            
+            <!-- Steps -->
+            <div class="steps-container">
+                <div class="steps-header">
+                    <h3>📱 Proceso de Registro</h3>
+                    <div class="steps-subtitle">Sigue estos pasos para completar tu configuración</div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Descarga Order Manager</div>
+                        <div class="step-description">Instala la aplicación Order Manager en tu dispositivo móvil desde la tienda de aplicaciones.</div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Crear Cuenta Nueva</div>
+                        <div class="step-description">Abre la app y toca "Crear Cuenta". Usa exactamente este email: <span class="email-highlight">{{.Email}}</span></div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Configura tu Contraseña</div>
+                        <div class="step-description">Elige una contraseña segura que puedas recordar fácilmente.</div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Verifica tu Email</div>
+                        <div class="step-description">Ingresa el código de verificación (OTP) que recibirás por email.</div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">Completa tu Perfil</div>
+                        <div class="step-description">El sistema detectará automáticamente tu invitación y te pedirá completar tu información personal.</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- CTA Button -->
+            <div class="cta-container">
+                <a href="{{.ConfirmationURL}}" class="cta-button">
+                    🚀 Abrir Order Manager
+                </a>
+            </div>
+            
+            <!-- Warning Box -->
+            <div class="warning-box">
+                <div class="warning-title">
+                    ⚠️ Información Importante
+                </div>
+                <ul class="warning-list">
+                    <li>Usa exactamente este email: <strong>{{.Email}}</strong></li>
+                    <li>El sistema detectará automáticamente tu invitación</li>
+                    <li>Esta invitación expira en <strong>7 días</strong></li>
+                    <li>Si tienes problemas, contacta a {{.Data.invited_by_name}}</li>
+                </ul>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <p>¡Esperamos verte pronto formando parte del equipo de <strong>{{.Data.business_name}}</strong>! Si tienes alguna pregunta, no dudes en contactarnos.</p>
+            
+            <!-- Signature -->
+            <div class="signature">
+                <div class="signature-name">{{.Data.invited_by_name}}</div>
+                <div class="signature-business">{{.Data.business_name}}</div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-logo">Order Manager</div>
+            <p>Sistema de gestión de pedidos y equipos</p>
+            <p>Este correo fue enviado automáticamente</p>
+            <p>Tipo: {{.Data.type}} • ID: Confidencial</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -168,7 +168,7 @@ export default function SignInScreen({
               </View>
               
               <Text style={styles.infoTitle}>
-                ¿Recibiste una invitación por email?
+                ¿Recibiste una invitación para unirte a un negocio?
               </Text>
               
               <Text style={styles.infoDescription}>
@@ -181,9 +181,9 @@ export default function SignInScreen({
                     <Text style={styles.stepNumberText}>1</Text>
                   </View>
                   <View style={styles.stepContent}>
-                    <Text style={styles.stepTitle}>Revisa tu email</Text>
+                    <Text style={styles.stepTitle}>Crear cuenta nueva</Text>
                     <Text style={styles.stepDescription}>
-                      Busca un correo con el asunto "Confirma tu cuenta" y un código de verificación
+                      Usa "Crear Cuenta" en esta app con el email al que te enviaron la invitación
                     </Text>
                   </View>
                 </View>
@@ -193,9 +193,9 @@ export default function SignInScreen({
                     <Text style={styles.stepNumberText}>2</Text>
                   </View>
                   <View style={styles.stepContent}>
-                    <Text style={styles.stepTitle}>Obtén tu contraseña temporal</Text>
+                    <Text style={styles.stepTitle}>Elige tu contraseña</Text>
                     <Text style={styles.stepDescription}>
-                      Contacta a la persona que te invitó para obtener tu contraseña temporal
+                      Usa tu email de invitación y elige tu propia contraseña segura
                     </Text>
                   </View>
                 </View>
@@ -205,9 +205,9 @@ export default function SignInScreen({
                     <Text style={styles.stepNumberText}>3</Text>
                   </View>
                   <View style={styles.stepContent}>
-                    <Text style={styles.stepTitle}>Inicia sesión</Text>
+                    <Text style={styles.stepTitle}>Verifica tu email</Text>
                     <Text style={styles.stepDescription}>
-                      Usa tu email y la contraseña temporal para iniciar sesión en esta pantalla
+                      Ingresa el código de verificación que recibas por email
                     </Text>
                   </View>
                 </View>
@@ -217,21 +217,9 @@ export default function SignInScreen({
                     <Text style={styles.stepNumberText}>4</Text>
                   </View>
                   <View style={styles.stepContent}>
-                    <Text style={styles.stepTitle}>Verifica tu email</Text>
-                    <Text style={styles.stepDescription}>
-                      Ingresa el código de verificación que recibiste por email
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.stepItem}>
-                  <View style={styles.stepNumber}>
-                    <Text style={styles.stepNumberText}>5</Text>
-                  </View>
-                  <View style={styles.stepContent}>
                     <Text style={styles.stepTitle}>Completa tu perfil</Text>
                     <Text style={styles.stepDescription}>
-                      Después de verificar tu email, aparecerá automáticamente una pantalla para que ingreses tu nombre completo y configures tu perfil
+                      El sistema detectará automáticamente tu invitación y te pedirá completar tu perfil
                     </Text>
                   </View>
                 </View>

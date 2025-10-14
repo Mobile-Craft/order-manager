@@ -1,0 +1,60 @@
+🎉 ¡HAS SIDO INVITADO A ORDER MANAGER!
+
+Hola,
+
+Es un placer informarte que has sido seleccionado para unirte a nuestro equipo. ¡Estamos emocionados de tenerte a bordo!
+
+═══════════════════════════════════════
+DETALLES DE LA INVITACIÓN
+═══════════════════════════════════════
+
+🏢 Negocio: {{.Data.business_name}}
+👤 Rol: {{.Data.role}}
+📧 Email: {{.Email}}
+👨‍💼 Invitado por: {{.Data.invited_by_name}}
+
+═══════════════════════════════════════
+📱 PROCESO DE REGISTRO (5 PASOS)
+═══════════════════════════════════════
+
+1️⃣ DESCARGA ORDER MANAGER
+   Instala la aplicación Order Manager en tu dispositivo móvil.
+
+2️⃣ CREAR CUENTA NUEVA  
+   Abre la app y toca "Crear Cuenta". 
+   ⚠️ USA EXACTAMENTE ESTE EMAIL: {{.Email}}
+
+3️⃣ CONFIGURA TU CONTRASEÑA
+   Elige una contraseña segura que puedas recordar.
+
+4️⃣ VERIFICA TU EMAIL
+   Ingresa el código de verificación (OTP) que recibirás.
+
+5️⃣ COMPLETA TU PERFIL
+   El sistema detectará automáticamente tu invitación.
+
+═══════════════════════════════════════
+⚠️ INFORMACIÓN IMPORTANTE
+═══════════════════════════════════════
+
+• Email a usar: {{.Email}}
+• Rol asignado: {{.Data.role}}
+• Esta invitación expira en 7 días
+• El sistema detectará automáticamente tu invitación
+• Si tienes problemas, contacta a {{.Data.invited_by_name}}
+
+═══════════════════════════════════════
+
+🚀 SI TIENES LA APP INSTALADA:
+   Toca este enlace: {{.ConfirmationURL}}
+
+¡Esperamos verte pronto formando parte del equipo de {{.Data.business_name}}!
+
+Saludos,
+{{.Data.invited_by_name}}
+{{.Data.business_name}}
+
+---
+📱 Order Manager - Sistema de gestión de pedidos y equipos
+Este correo fue enviado automáticamente
+Tipo: {{.Data.type}}

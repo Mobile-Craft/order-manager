@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "functions": {
+    "send-invitation-email": {
+      "runtime": "deno",
+      "entrypoint": "./index.ts"
+    }
+  }
+}

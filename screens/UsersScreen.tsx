@@ -22,7 +22,6 @@ import {
   Send,
   X,
   Edit,
-  Key,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerActions } from '@react-navigation/native';
@@ -45,9 +44,9 @@ interface BusinessInvitation {
   role: 'Cajero' | 'Cocina';
   created_at: string;
   expires_at: string;
-  accepted: boolean;
-  temp_password?: string;
-  invitation_token?: string;
+  status: 'pending' | 'completed' | 'expired';
+  business_id: string;
+  invited_by?: string;
 }
 
 export default function UsersScreen() {
@@ -103,7 +102,7 @@ export default function UsersScreen() {
         .from('business_invitations')
         .select('*')
         .eq('business_id', user.business.id)
-        .eq('accepted', false)
+        .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -193,68 +192,98 @@ export default function UsersScreen() {
     try {
       setInviteLoading(true);
       
-      // Generar contraseña temporal
-      const { data: tempPasswordData, error: passwordError } = await supabase
-        .rpc('generate_temp_password');
-
-      if (passwordError) throw passwordError;
-
-      // Crear usuario en Supabase Auth con email y contraseña temporal
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: inviteEmail.trim().toLowerCase(),
-        password: tempPasswordData,
-        email_confirm: false, // El usuario necesitará confirmar su email
-        user_metadata: {
-          invited_by: user?.profile?.id,
-          business_id: user?.business?.id,
-          role: inviteRole,
-          is_invitation: true
-        }
-      });
-
-      if (authError) {
-        // Si el usuario ya existe en Auth pero no en nuestras tablas
-        if (authError.message.includes('already registered')) {
-          Alert.alert(
-            'Error', 
-            'Ya existe una cuenta con este correo electrónico. El usuario debe usar la función de recuperación de contraseña.'
-          );
-          return;
-        }
-        throw authError;
-      }
-
-      // Crear la invitación en nuestra tabla
-      const { error: invitationError } = await supabase
+      console.log('🔄 Iniciando proceso de invitación...');
+      console.log('📧 Email:', inviteEmail.trim().toLowerCase());
+      console.log('👤 Rol:', inviteRole);
+      console.log('🏢 Business ID:', user?.business?.id);
+      console.log('👤 User ID (invited_by):', user?.id);
+      
+      // Crear la invitación en la base de datos
+      console.log('💾 Insertando invitación en base de datos...');
+      
+      const { data: insertedData, error: invitationError } = await supabase
         .from('business_invitations')
-        .insert([{
+        .insert({
           business_id: user?.business?.id,
           email: inviteEmail.trim().toLowerCase(),
           role: inviteRole,
-          invited_by: user?.profile?.id,
-          temp_password: tempPasswordData,
-          auth_user_id: authData.user.id
-        }]);
+          invited_by: user?.id, // Incluir quién hizo la invitación
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'pending'
+        })
+        .select();
 
-      if (invitationError) throw invitationError;
+      if (invitationError) {
+        console.error('❌ Error completo al insertar invitación:', {
+          code: invitationError.code,
+          message: invitationError.message,
+          details: invitationError.details,
+          hint: invitationError.hint
+        });
+        throw invitationError;
+      }
+      
+      console.log('✅ Invitación insertada correctamente:', insertedData);
 
-      // El usuario recibirá un email automático de confirmación de Supabase
+      // Usar el sistema nativo de Supabase para enviar correo
+      console.log('📧 Enviando correo de invitación...');
+      try {
+        const { error: emailError } = await supabase.auth.signInWithOtp({
+          email: inviteEmail.trim().toLowerCase(),
+          options: {
+            shouldCreateUser: false,
+            emailRedirectTo: 'myapp://invitation',
+            data: {
+              type: 'business_invitation',
+              business_name: user?.business?.name || 'Order Manager',
+              business_id: user?.business?.id,
+              role: inviteRole,
+              invited_by_name: user?.profile?.full_name || 'Administrador',
+              invited_by_email: user?.email,
+              message: `Has sido invitado a unirte a ${user?.business?.name || 'Order Manager'} como ${inviteRole}. 
+
+Para completar tu registro:
+
+1. Descarga la aplicación Order Manager
+2. Toca "Crear Cuenta" 
+3. Usa este email: ${inviteEmail}
+4. Elige tu contraseña
+5. Verifica tu email con el código OTP
+6. Completa tu perfil
+
+¡El sistema detectará automáticamente tu invitación!
+
+Esta invitación expira en 7 días.
+
+¡Esperamos verte pronto en el equipo!
+
+Saludos,
+${user?.profile?.full_name || 'El equipo de ' + (user?.business?.name || 'Order Manager')}`
+            }
+          }
+        });
+
+        if (emailError) {
+          console.warn('⚠️ No se pudo enviar correo automático:', emailError);
+          // No hacer throw porque la invitación ya está creada
+        } else {
+          console.log('✅ Correo de invitación enviado exitosamente');
+        }
+      } catch (emailError) {
+        console.warn('⚠️ Error en el envío de correo:', emailError);
+      }
+
       Alert.alert(
         'Invitación Enviada',
-        `Se ha enviado una invitación a ${inviteEmail} para unirse como ${inviteRole}.\n\n` +
-        `El usuario recibirá un correo de confirmación con un código OTP.\n\n` +
-        `Contraseña temporal: ${tempPasswordData}\n\n` +
-        `Comparte esta contraseña con el usuario para que pueda iniciar sesión después de confirmar su email.`,
-        [
-          {
-            text: 'Copiar Contraseña',
-            onPress: () => {
-              // En una app real, aquí usarías Clipboard.setString()
-              console.log('Contraseña copiada:', tempPasswordData);
-            }
-          },
-          { text: 'OK' }
-        ]
+        `✅ Se ha creado la invitación para ${inviteEmail} como ${inviteRole}.\n\n` +
+        `📧 Se ha enviado un correo con las instrucciones de registro.\n\n` +
+        `El correo incluye:\n` +
+        `• Link directo a la aplicación\n` +
+        `• Instrucciones paso a paso\n` +
+        `• Información del negocio y rol\n` +
+        `• Fecha de expiración (7 días)\n\n` +
+        `Si ${inviteEmail} no recibe el correo, revisa la carpeta de spam o reenvía la invitación.`,
+        [{ text: 'OK' }]
       );
 
       setInviteEmail('');
@@ -501,27 +530,6 @@ export default function UsersScreen() {
                     >
                       <X size={16} color="#DC2626" />
                     </TouchableOpacity>
-
-                    {invitation.temp_password && (
-                      <TouchableOpacity
-                        style={styles.copyPasswordButton}
-                        onPress={() => {
-                          Alert.alert(
-                            'Contraseña Temporal',
-                            `Contraseña: ${invitation.temp_password}`,
-                            [
-                              {
-                                text: 'Copiar',
-                                onPress: () => console.log('Contraseña copiada')
-                              },
-                              { text: 'OK' }
-                            ]
-                          );
-                        }}
-                      >
-                        <Key size={16} color="#059669" />
-                      </TouchableOpacity>
-                    )}
                   </View>
                 );
               })}
