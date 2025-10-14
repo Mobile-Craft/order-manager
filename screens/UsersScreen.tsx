@@ -23,6 +23,9 @@ import {
   Trash2,
   Send,
   X,
+  Edit,
+  Key,
+  Copy,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerActions } from '@react-navigation/native';
@@ -46,6 +49,8 @@ interface BusinessInvitation {
   created_at: string;
   expires_at: string;
   accepted: boolean;
+  temp_password?: string;
+  invitation_token?: string;
 }
 
 export default function UsersScreen() {
@@ -55,11 +60,18 @@ export default function UsersScreen() {
   const [invitations, setInvitations] = useState<BusinessInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   
   // Formulario de invitación
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'Cajero' | 'Cocina'>('Cajero');
   const [inviteLoading, setInviteLoading] = useState(false);
+
+  // Formulario de edición
+  const [editName, setEditName] = useState('');
+  const [editRole, setEditRole] = useState<'Cajero' | 'Cocina'>('Cajero');
+  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
     if (user?.business?.id) {
@@ -106,6 +118,56 @@ export default function UsersScreen() {
     }
   };
 
+  const openEditModal = (userProfile: UserProfile) => {
+    if (userProfile.role === 'Admin') {
+      Alert.alert('Error', 'No se puede editar el rol de un administrador');
+      return;
+    }
+    setEditingUser(userProfile);
+    setEditName(userProfile.full_name);
+    setEditRole(userProfile.role as 'Cajero' | 'Cocina');
+    setShowEditModal(true);
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditingUser(null);
+    setEditName('');
+    setEditRole('Cajero');
+  };
+
+  const updateUser = async () => {
+    if (!editingUser) return;
+    
+    if (!editName.trim()) {
+      Alert.alert('Error', 'El nombre es requerido');
+      return;
+    }
+
+    try {
+      setEditLoading(true);
+      
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          full_name: editName.trim(),
+          role: editRole,
+        })
+        .eq('id', editingUser.id);
+
+      if (error) throw error;
+
+      Alert.alert('Éxito', 'Usuario actualizado correctamente');
+      closeEditModal();
+      loadUsers();
+    } catch (error) {
+      console.error('Error updating user:', error);
+      Alert.alert('Error', 'No se pudo actualizar el usuario');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   const sendInvitation = async () => {
     if (!inviteEmail.trim()) {
       Alert.alert('Error', 'El correo electrónico es requerido');
@@ -134,6 +196,12 @@ export default function UsersScreen() {
     try {
       setInviteLoading(true);
       
+      // Generar contraseña temporal
+      const { data: tempPasswordData, error: passwordError } = await supabase
+        .rpc('generate_temp_password');
+
+      if (passwordError) throw passwordError;
+
       const { error } = await supabase
         .from('business_invitations')
         .insert([{
@@ -141,13 +209,24 @@ export default function UsersScreen() {
           email: inviteEmail.trim().toLowerCase(),
           role: inviteRole,
           invited_by: user?.profile?.id,
+          temp_password: tempPasswordData,
         }]);
 
       if (error) throw error;
 
       Alert.alert(
         'Invitación Enviada',
-        `Se ha enviado una invitación a ${inviteEmail} para unirse como ${inviteRole}`
+        `Se ha enviado una invitación a ${inviteEmail} para unirse como ${inviteRole}.\n\nContraseña temporal: ${tempPasswordData}\n\nComparte esta información con el usuario.`,
+        [
+          {
+            text: 'Copiar Contraseña',
+            onPress: () => {
+              // En una app real, aquí usarías Clipboard.setString()
+              console.log('Contraseña copiada:', tempPasswordData);
+            }
+          },
+          { text: 'OK' }
+        ]
       );
 
       setInviteEmail('');
@@ -340,12 +419,20 @@ export default function UsersScreen() {
                     </View>
                     
                     {!isCurrentUser && userProfile.role !== 'Admin' && (
-                      <TouchableOpacity
-                        style={styles.removeButton}
-                        onPress={() => removeUser(userProfile.id, userProfile.full_name)}
-                      >
-                        <Trash2 size={16} color="#DC2626" />
-                      </TouchableOpacity>
+                      <View style={styles.userActions}>
+                        <TouchableOpacity
+                          style={styles.editButton}
+                          onPress={() => openEditModal(userProfile)}
+                        >
+                          <Edit size={16} color="#3B82F6" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.removeButton}
+                          onPress={() => removeUser(userProfile.id, userProfile.full_name)}
+                        >
+                          <Trash2 size={16} color="#DC2626" />
+                        </TouchableOpacity>
+                      </View>
                     )}
                   </View>
                 );
@@ -386,6 +473,27 @@ export default function UsersScreen() {
                     >
                       <X size={16} color="#DC2626" />
                     </TouchableOpacity>
+
+                    {invitation.temp_password && (
+                      <TouchableOpacity
+                        style={styles.copyPasswordButton}
+                        onPress={() => {
+                          Alert.alert(
+                            'Contraseña Temporal',
+                            `Contraseña: ${invitation.temp_password}`,
+                            [
+                              {
+                                text: 'Copiar',
+                                onPress: () => console.log('Contraseña copiada')
+                              },
+                              { text: 'OK' }
+                            ]
+                          );
+                        }}
+                      >
+                        <Key size={16} color="#059669" />
+                      </TouchableOpacity>
+                    )}
                   </View>
                 );
               })}
@@ -496,6 +604,113 @@ export default function UsersScreen() {
               <Send size={20} color="white" />
               <Text style={styles.sendButtonText}>
                 {inviteLoading ? 'Enviando...' : 'Enviar Invitación'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Modal de Edición de Usuario */}
+      <Modal
+        visible={showEditModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Editar Usuario</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={closeEditModal}
+            >
+              <X size={24} color={theme.colors.primaryDark} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.modalContent}>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Nombre Completo</Text>
+              <View style={styles.inputContainer}>
+                <Users size={20} color="#6B7280" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nombre completo"
+                  value={editName}
+                  onChangeText={setEditName}
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Rol</Text>
+              <View style={styles.roleButtons}>
+                <TouchableOpacity
+                  style={[
+                    styles.roleButton,
+                    editRole === 'Cajero' && styles.roleButtonActive
+                  ]}
+                  onPress={() => setEditRole('Cajero')}
+                >
+                  <ShoppingCart size={20} color={editRole === 'Cajero' ? 'white' : '#059669'} />
+                  <Text style={[
+                    styles.roleButtonText,
+                    editRole === 'Cajero' && styles.roleButtonTextActive
+                  ]}>
+                    Cajero
+                  </Text>
+                  <Text style={[
+                    styles.roleDescription,
+                    editRole === 'Cajero' && styles.roleDescriptionActive
+                  ]}>
+                    Crear órdenes, cobrar
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.roleButton,
+                    editRole === 'Cocina' && styles.roleButtonActive
+                  ]}
+                  onPress={() => setEditRole('Cocina')}
+                >
+                  <ChefHat size={20} color={editRole === 'Cocina' ? 'white' : '#F59E0B'} />
+                  <Text style={[
+                    styles.roleButtonText,
+                    editRole === 'Cocina' && styles.roleButtonTextActive
+                  ]}>
+                    Cocina
+                  </Text>
+                  <Text style={[
+                    styles.roleDescription,
+                    editRole === 'Cocina' && styles.roleDescriptionActive
+                  ]}>
+                    Preparar órdenes
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.modalActions}>
+            <TouchableOpacity
+              style={styles.cancelModalButton}
+              onPress={closeEditModal}
+            >
+              <Text style={styles.cancelModalButtonText}>Cancelar</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.sendButton,
+                (!editName.trim() || editLoading) && styles.sendButtonDisabled
+              ]}
+              onPress={updateUser}
+              disabled={!editName.trim() || editLoading}
+            >
+              <Edit size={20} color="white" />
+              <Text style={styles.sendButtonText}>
+                {editLoading ? 'Actualizando...' : 'Actualizar Usuario'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -655,9 +870,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEE2E2',
     borderRadius: 8,
   },
+  editButton: {
+    padding: 8,
+    backgroundColor: '#DBEAFE',
+    borderRadius: 8,
+  },
+  userActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   cancelButton: {
     padding: 8,
     backgroundColor: '#FEE2E2',
+    borderRadius: 8,
+  },
+  copyPasswordButton: {
+    padding: 8,
+    backgroundColor: '#ECFDF5',
     borderRadius: 8,
   },
 

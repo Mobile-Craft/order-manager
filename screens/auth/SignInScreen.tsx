@@ -20,10 +20,20 @@ interface SignInScreenProps {
 }
 
 export default function SignInScreen({ onNavigateToSignUp }: SignInScreenProps) {
-  const { signIn } = useAuth();
+  const { signIn, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showInvitationInfo, setShowInvitationInfo] = useState(false);
+
+  // Verificar si hay invitaciones pendientes al cargar
+  React.useEffect(() => {
+    checkPendingInvitations();
+  }, []);
+
+  const checkPendingInvitations = async () => {
+    // Esta función se puede expandir para mostrar invitaciones pendientes
+  };
 
   const handleSignIn = async () => {
     if (!email.trim()) {
@@ -110,6 +120,13 @@ export default function SignInScreen({ onNavigateToSignUp }: SignInScreenProps) 
             <TouchableOpacity onPress={onNavigateToSignUp}>
               <Text style={styles.signUpLink}>Crear Cuenta</Text>
             </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.invitationButton}
+            onPress={() => setShowInvitationInfo(true)}
+          >
+            <Text style={styles.invitationText}>¿Fuiste invitado a un negocio?</Text>
+          </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -203,5 +220,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: theme.colors.primary,
+  },
+  invitationButton: {
+    marginTop: 16,
+    paddingVertical: 8,
+  },
+  invitationText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    textDecorationLine: 'underline',
   },
 });
