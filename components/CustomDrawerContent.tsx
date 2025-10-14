@@ -20,6 +20,7 @@ import {
   LogOut,
   ChefHat,
   Package,
+  Users,
 } from 'lucide-react-native';
 
 import { useAuth } from '@/context/AuthContext';
@@ -73,6 +74,12 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
         name: 'Productos',
         icon: Package,
         route: 'products',
+        allowedRoles: ['Admin'],
+      },
+      {
+        name: 'Usuarios',
+        icon: Users,
+        route: 'users',
         allowedRoles: ['Admin'],
       },
     ],

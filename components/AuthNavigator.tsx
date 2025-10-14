@@ -11,6 +11,7 @@ import KitchenScreen from '@/screens/KitchenScreen';
 import HistoryScreen from '@/screens/HistoryScreen';
 import SalesScreen from '@/screens/SalesScreen';
 import ProductsScreen from '@/screens/ProductsScreen';
+import UsersScreen from '@/screens/UsersScreen';
 import { CustomDrawerContent } from '@/components/CustomDrawerContent';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 
@@ -77,6 +78,14 @@ function MainDrawer() {
         options={{
           drawerLabel: 'Productos',
           title: 'Productos',
+        }}
+      />
+      <Drawer.Screen
+        name="users"
+        component={UsersScreen}
+        options={{
+          drawerLabel: 'Usuarios',
+          title: 'Usuarios',
         }}
       />
     </Drawer.Navigator>

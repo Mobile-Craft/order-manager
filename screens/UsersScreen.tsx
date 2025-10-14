@@ -1,0 +1,788 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Modal,
+  Alert,
+  SafeAreaView,
+} from 'react-native';
+import {
+  Users,
+  Plus,
+  Mail,
+  UserCheck,
+  UserX,
+  Menu,
+  Crown,
+  ShoppingCart,
+  ChefHat,
+  Trash2,
+  Send,
+  X,
+} from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import { DrawerActions } from '@react-navigation/native';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { theme } from '@/lib/theme';
+
+interface UserProfile {
+  id: string;
+  user_id: string;
+  full_name: string;
+  role: 'Admin' | 'Cajero' | 'Cocina';
+  created_at: string;
+}
+
+interface BusinessInvitation {
+  id: string;
+  email: string;
+  role: 'Cajero' | 'Cocina';
+  created_at: string;
+  expires_at: string;
+  accepted: boolean;
+}
+
+export default function UsersScreen() {
+  const navigation = useNavigation();
+  const { user, isAdmin } = useAuth();
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [invitations, setInvitations] = useState<BusinessInvitation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  
+  // Formulario de invitación
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<'Cajero' | 'Cocina'>('Cajero');
+  const [inviteLoading, setInviteLoading] = useState(false);
+
+  useEffect(() => {
+    if (user?.business?.id) {
+      loadUsers();
+      loadInvitations();
+    }
+  }, [user?.business?.id]);
+
+  const loadUsers = async () => {
+    if (!user?.business?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('business_id', user.business.id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (error) {
+      console.error('Error loading users:', error);
+      Alert.alert('Error', 'No se pudieron cargar los usuarios');
+    }
+  };
+
+  const loadInvitations = async () => {
+    if (!user?.business?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('business_invitations')
+        .select('*')
+        .eq('business_id', user.business.id)
+        .eq('accepted', false)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setInvitations(data || []);
+    } catch (error) {
+      console.error('Error loading invitations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendInvitation = async () => {
+    if (!inviteEmail.trim()) {
+      Alert.alert('Error', 'El correo electrónico es requerido');
+      return;
+    }
+
+    if (!inviteEmail.includes('@')) {
+      Alert.alert('Error', 'Ingresa un correo electrónico válido');
+      return;
+    }
+
+    // Verificar si ya existe un usuario con ese email
+    const existingUser = users.find(u => u.user_id === inviteEmail);
+    if (existingUser) {
+      Alert.alert('Error', 'Ya existe un usuario con ese correo electrónico');
+      return;
+    }
+
+    // Verificar si ya hay una invitación pendiente
+    const existingInvitation = invitations.find(i => i.email === inviteEmail.trim().toLowerCase());
+    if (existingInvitation) {
+      Alert.alert('Error', 'Ya hay una invitación pendiente para este correo');
+      return;
+    }
+
+    try {
+      setInviteLoading(true);
+      
+      const { error } = await supabase
+        .from('business_invitations')
+        .insert([{
+          business_id: user?.business?.id,
+          email: inviteEmail.trim().toLowerCase(),
+          role: inviteRole,
+          invited_by: user?.profile?.id,
+        }]);
+
+      if (error) throw error;
+
+      Alert.alert(
+        'Invitación Enviada',
+        `Se ha enviado una invitación a ${inviteEmail} para unirse como ${inviteRole}`
+      );
+
+      setInviteEmail('');
+      setInviteRole('Cajero');
+      setShowInviteModal(false);
+      loadInvitations();
+    } catch (error) {
+      console.error('Error sending invitation:', error);
+      Alert.alert('Error', 'No se pudo enviar la invitación');
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
+  const cancelInvitation = async (invitationId: string) => {
+    Alert.alert(
+      'Cancelar Invitación',
+      '¿Estás seguro de que quieres cancelar esta invitación?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Sí, cancelar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from('business_invitations')
+                .delete()
+                .eq('id', invitationId);
+
+              if (error) throw error;
+              
+              Alert.alert('Éxito', 'Invitación cancelada');
+              loadInvitations();
+            } catch (error) {
+              console.error('Error canceling invitation:', error);
+              Alert.alert('Error', 'No se pudo cancelar la invitación');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const removeUser = async (userId: string, userName: string) => {
+    Alert.alert(
+      'Eliminar Usuario',
+      `¿Estás seguro de que quieres eliminar a ${userName} del negocio?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from('user_profiles')
+                .delete()
+                .eq('id', userId);
+
+              if (error) throw error;
+              
+              Alert.alert('Éxito', 'Usuario eliminado del negocio');
+              loadUsers();
+            } catch (error) {
+              console.error('Error removing user:', error);
+              Alert.alert('Error', 'No se pudo eliminar el usuario');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'Admin': return Crown;
+      case 'Cajero': return ShoppingCart;
+      case 'Cocina': return ChefHat;
+      default: return Users;
+    }
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'Admin': return '#DC2626';
+      case 'Cajero': return '#059669';
+      case 'Cocina': return '#F59E0B';
+      default: return '#6B7280';
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('es-DO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
+  if (!isAdmin) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+          >
+            <Menu size={24} color={theme.colors.primaryDark} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Acceso Denegado</Text>
+          <View style={styles.placeholder} />
+        </View>
+        <View style={styles.accessDenied}>
+          <Text style={styles.accessDeniedText}>
+            Solo los administradores pueden gestionar usuarios
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.menuButton}
+          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+        >
+          <Menu size={24} color={theme.colors.primaryDark} />
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Users size={28} color={theme.colors.primaryDark} />
+          <Text style={styles.title}>Usuarios</Text>
+        </View>
+        <View style={styles.placeholder} />
+      </View>
+
+      <View style={styles.statsContainer}>
+        <Text style={styles.statsText}>
+          {users.length} usuarios • {invitations.length} invitaciones pendientes
+        </Text>
+      </View>
+
+      <TouchableOpacity 
+        style={styles.inviteButton} 
+        onPress={() => setShowInviteModal(true)}
+      >
+        <Plus size={20} color="white" />
+        <Text style={styles.inviteButtonText}>Invitar Usuario</Text>
+      </TouchableOpacity>
+
+      {loading ? (
+        <LoadingSpinner message="Cargando usuarios..." />
+      ) : (
+        <ScrollView style={styles.content}>
+          {/* Usuarios Activos */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Usuarios Activos ({users.length})</Text>
+            {users.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Users size={48} color="#D1D5DB" />
+                <Text style={styles.emptyText}>No hay usuarios</Text>
+              </View>
+            ) : (
+              users.map((userProfile) => {
+                const RoleIcon = getRoleIcon(userProfile.role);
+                const roleColor = getRoleColor(userProfile.role);
+                const isCurrentUser = userProfile.user_id === user?.id;
+                
+                return (
+                  <View key={userProfile.id} style={styles.userCard}>
+                    <View style={styles.userInfo}>
+                      <View style={[styles.roleIcon, { backgroundColor: roleColor + '20' }]}>
+                        <RoleIcon size={20} color={roleColor} />
+                      </View>
+                      <View style={styles.userDetails}>
+                        <Text style={styles.userName}>
+                          {userProfile.full_name}
+                          {isCurrentUser && ' (Tú)'}
+                        </Text>
+                        <Text style={[styles.userRole, { color: roleColor }]}>
+                          {userProfile.role}
+                        </Text>
+                        <Text style={styles.userDate}>
+                          Desde {formatDate(userProfile.created_at)}
+                        </Text>
+                      </View>
+                    </View>
+                    
+                    {!isCurrentUser && userProfile.role !== 'Admin' && (
+                      <TouchableOpacity
+                        style={styles.removeButton}
+                        onPress={() => removeUser(userProfile.id, userProfile.full_name)}
+                      >
+                        <Trash2 size={16} color="#DC2626" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                );
+              })
+            )}
+          </View>
+
+          {/* Invitaciones Pendientes */}
+          {invitations.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>
+                Invitaciones Pendientes ({invitations.length})
+              </Text>
+              {invitations.map((invitation) => {
+                const RoleIcon = getRoleIcon(invitation.role);
+                const roleColor = getRoleColor(invitation.role);
+                
+                return (
+                  <View key={invitation.id} style={styles.invitationCard}>
+                    <View style={styles.userInfo}>
+                      <View style={[styles.roleIcon, { backgroundColor: roleColor + '20' }]}>
+                        <Mail size={20} color={roleColor} />
+                      </View>
+                      <View style={styles.userDetails}>
+                        <Text style={styles.userName}>{invitation.email}</Text>
+                        <Text style={[styles.userRole, { color: roleColor }]}>
+                          {invitation.role}
+                        </Text>
+                        <Text style={styles.userDate}>
+                          Invitado el {formatDate(invitation.created_at)}
+                        </Text>
+                      </View>
+                    </View>
+                    
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={() => cancelInvitation(invitation.id)}
+                    >
+                      <X size={16} color="#DC2626" />
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </ScrollView>
+      )}
+
+      {/* Modal de Invitación */}
+      <Modal
+        visible={showInviteModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Invitar Usuario</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowInviteModal(false)}
+            >
+              <X size={24} color={theme.colors.primaryDark} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.modalContent}>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Correo Electrónico</Text>
+              <View style={styles.inputContainer}>
+                <Mail size={20} color="#6B7280" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="usuario@ejemplo.com"
+                  value={inviteEmail}
+                  onChangeText={setInviteEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Rol</Text>
+              <View style={styles.roleButtons}>
+                <TouchableOpacity
+                  style={[
+                    styles.roleButton,
+                    inviteRole === 'Cajero' && styles.roleButtonActive
+                  ]}
+                  onPress={() => setInviteRole('Cajero')}
+                >
+                  <ShoppingCart size={20} color={inviteRole === 'Cajero' ? 'white' : '#059669'} />
+                  <Text style={[
+                    styles.roleButtonText,
+                    inviteRole === 'Cajero' && styles.roleButtonTextActive
+                  ]}>
+                    Cajero
+                  </Text>
+                  <Text style={[
+                    styles.roleDescription,
+                    inviteRole === 'Cajero' && styles.roleDescriptionActive
+                  ]}>
+                    Crear órdenes, cobrar
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.roleButton,
+                    inviteRole === 'Cocina' && styles.roleButtonActive
+                  ]}
+                  onPress={() => setInviteRole('Cocina')}
+                >
+                  <ChefHat size={20} color={inviteRole === 'Cocina' ? 'white' : '#F59E0B'} />
+                  <Text style={[
+                    styles.roleButtonText,
+                    inviteRole === 'Cocina' && styles.roleButtonTextActive
+                  ]}>
+                    Cocina
+                  </Text>
+                  <Text style={[
+                    styles.roleDescription,
+                    inviteRole === 'Cocina' && styles.roleDescriptionActive
+                  ]}>
+                    Preparar órdenes
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.modalActions}>
+            <TouchableOpacity
+              style={styles.cancelModalButton}
+              onPress={() => setShowInviteModal(false)}
+            >
+              <Text style={styles.cancelModalButtonText}>Cancelar</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.sendButton,
+                (!inviteEmail.trim() || inviteLoading) && styles.sendButtonDisabled
+              ]}
+              onPress={sendInvitation}
+              disabled={!inviteEmail.trim() || inviteLoading}
+            >
+              <Send size={20} color="white" />
+              <Text style={styles.sendButtonText}>
+                {inviteLoading ? 'Enviando...' : 'Enviar Invitación'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  menuButton: {
+    padding: 8,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: theme.colors.primaryDark,
+  },
+  placeholder: {
+    width: 40,
+  },
+  accessDenied: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  accessDeniedText: {
+    fontSize: 18,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  statsContainer: {
+    padding: 16,
+    backgroundColor: '#ECFDF5',
+    borderBottomWidth: 1,
+    borderBottomColor: '#059669',
+  },
+  statsText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#065F46',
+    textAlign: 'center',
+  },
+  inviteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.primaryDark,
+    margin: 16,
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  inviteButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  content: {
+    flex: 1,
+  },
+  section: {
+    margin: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 12,
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: 32,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginTop: 8,
+  },
+  userCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  invitationCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  roleIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  userDetails: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  userRole: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  userDate: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  removeButton: {
+    padding: 8,
+    backgroundColor: '#FEE2E2',
+    borderRadius: 8,
+  },
+  cancelButton: {
+    padding: 8,
+    backgroundColor: '#FEE2E2',
+    borderRadius: 8,
+  },
+
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1F2937',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 16,
+  },
+  formGroup: {
+    marginBottom: 24,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'white',
+  },
+  inputIcon: {
+    marginRight: 12,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#1F2937',
+  },
+  roleButtons: {
+    gap: 12,
+  },
+  roleButton: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    backgroundColor: 'white',
+    alignItems: 'center',
+  },
+  roleButtonActive: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primaryDark,
+  },
+  roleButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  roleButtonTextActive: {
+    color: 'white',
+  },
+  roleDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  roleDescriptionActive: {
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    padding: 16,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  cancelModalButton: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+  },
+  cancelModalButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  sendButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.primaryDark,
+    padding: 16,
+    borderRadius: 8,
+    gap: 8,
+  },
+  sendButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
+  },
+  sendButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+    opacity: 0.6,
+  },
+});
