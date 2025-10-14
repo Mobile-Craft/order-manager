@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Descargar Order Manager</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            max-width: 400px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #6b7280;
+            margin-bottom: 30px;
+        }
+        .btn {
+            display: inline-block;
+            background: #00AEEF;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: #0090CC;
+            transform: translateY(-2px);
+        }
+        #countdown {
+            margin-top: 20px;
+            color: #6b7280;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">📱</div>
+        <h1>Order Manager</h1>
+        <p>Has sido invitado a unirte al equipo. Descarga la app para continuar.</p>
+        
+        <div id="store-buttons">
+            <a href="#" id="ios-btn" class="btn" style="display:none;">
+                🍎 Descargar para iOS
+            </a>
+            <a href="#" id="android-btn" class="btn" style="display:none;">
+                🤖 Descargar para Android
+            </a>
+        </div>
+        
+        <div id="countdown">Redirigiendo automáticamente...</div>
+    </div>
+
+    <script>
+        // URLs de las tiendas (ACTUALIZA ESTAS URLs)
+        const IOS_URL = 'https://apps.apple.com/app/order-manager/id1234567890';
+        const ANDROID_URL = 'https://play.google.com/store/apps/details?id=com.orderManager.app';
+        
+        function detectPlatformAndRedirect() {
+            const userAgent = navigator.userAgent;
+            const iosBtn = document.getElementById('ios-btn');
+            const androidBtn = document.getElementById('android-btn');
+            const countdown = document.getElementById('countdown');
+            
+            if (/iPad|iPhone|iPod/.test(userAgent)) {
+                // iOS device
+                iosBtn.href = IOS_URL;
+                iosBtn.style.display = 'inline-block';
+                countdown.innerHTML = 'Redirigiendo a App Store en <span id="timer">3</span> segundos...';
+                
+                let seconds = 3;
+                const timer = setInterval(() => {
+                    seconds--;
+                    document.getElementById('timer').textContent = seconds;
+                    if (seconds <= 0) {
+                        clearInterval(timer);
+                        window.location.href = IOS_URL;
+                    }
+                }, 1000);
+                
+            } else if (/Android/.test(userAgent)) {
+                // Android device
+                androidBtn.href = ANDROID_URL;
+                androidBtn.style.display = 'inline-block';
+                countdown.innerHTML = 'Redirigiendo a Play Store en <span id="timer">3</span> segundos...';
+                
+                let seconds = 3;
+                const timer = setInterval(() => {
+                    seconds--;
+                    document.getElementById('timer').textContent = seconds;
+                    if (seconds <= 0) {
+                        clearInterval(timer);
+                        window.location.href = ANDROID_URL;
+                    }
+                }, 1000);
+                
+            } else {
+                // Desktop or other
+                iosBtn.href = IOS_URL;
+                androidBtn.href = ANDROID_URL;
+                iosBtn.style.display = 'inline-block';
+                androidBtn.style.display = 'inline-block';
+                countdown.innerHTML = 'Elige tu plataforma para descargar:';
+            }
+        }
+        
+        // Ejecutar al cargar la página
+        detectPlatformAndRedirect();
+    </script>
+</body>
+</html>

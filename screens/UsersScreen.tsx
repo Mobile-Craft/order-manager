@@ -232,14 +232,14 @@ export default function UsersScreen() {
           email: inviteEmail.trim().toLowerCase(),
           options: {
             shouldCreateUser: false,
-            emailRedirectTo: 'myapp://invitation',
+            emailRedirectTo: `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/invitation-redirect`,
             data: {
               type: 'business_invitation',
               business_name: user?.business?.name || 'Order Manager',
               business_id: user?.business?.id,
               role: inviteRole,
-              invited_by_name: user?.profile?.full_name || 'Administrador',
-              invited_by_email: user?.email,
+              invited_by_name: user?.profile?.full_name || user?.email?.split('@')[0] || 'Administrador',
+              invited_by_email: user?.email || '',
               message: `Has sido invitado a unirte a ${user?.business?.name || 'Order Manager'} como ${inviteRole}. 
 
 Para completar tu registro:
@@ -258,7 +258,7 @@ Esta invitación expira en 7 días.
 ¡Esperamos verte pronto en el equipo!
 
 Saludos,
-${user?.profile?.full_name || 'El equipo de ' + (user?.business?.name || 'Order Manager')}`
+${user?.profile?.full_name || user?.email?.split('@')[0] || 'El equipo de ' + (user?.business?.name || 'Order Manager')}`
             }
           }
         });

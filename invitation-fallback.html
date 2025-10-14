@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invitación a Order Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            max-width: 500px;
+            width: 100%;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #00AEEF 0%, #0090CC 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .content {
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .invitation-info {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .business-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: #00AEEF;
+            margin-bottom: 8px;
+        }
+        
+        .role {
+            background: #00AEEF;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .message {
+            color: #4b5563;
+            line-height: 1.6;
+            margin: 20px 0;
+        }
+        
+        .buttons {
+            margin: 30px 0;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 14px 28px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            margin: 10px;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .btn-primary {
+            background: #00AEEF;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0090CC;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+        
+        .instructions {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .instructions h4 {
+            color: #92400e;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        
+        .instructions ol {
+            color: #92400e;
+            margin-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .email-highlight {
+            background: #00AEEF;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        
+        @media (max-width: 600px) {
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .btn {
+                display: block;
+                margin: 10px 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">📱 Order Manager</div>
+            <div class="subtitle">Invitación de Equipo</div>
+        </div>
+        
+        <div class="content">
+            <h2>¡Has sido invitado!</h2>
+            
+            <div class="invitation-info">
+                <div class="business-name" id="businessName">Cargando...</div>
+                <div class="role" id="role">Cargando...</div>
+            </div>
+            
+            <div class="message">
+                Has sido seleccionado para unirte a nuestro equipo. Para comenzar, necesitas tener la aplicación Order Manager instalada en tu dispositivo.
+            </div>
+            
+            <div class="status" id="status"></div>
+            
+            <div class="buttons">
+                <button onclick="redirectToStore()" class="btn btn-primary" id="downloadBtn">
+                    � Descargar Order Manager
+                </button>
+            </div>
+            
+            <div class="instructions">
+                <h4>📋 Instrucciones de Registro:</h4>
+                <ol>
+                    <li>Descarga e instala Order Manager</li>
+                    <li>Abre la app y toca <strong>"Crear Cuenta"</strong></li>
+                    <li>Usa este email: <span class="email-highlight" id="inviteEmail">-</span></li>
+                    <li>Elige tu contraseña</li>
+                    <li>Verifica tu email con el código OTP</li>
+                    <li>Completa tu perfil</li>
+                </ol>
+                <p style="margin-top: 15px; font-weight: 600; color: #92400e;">
+                    ¡El sistema detectará automáticamente tu invitación!
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Obtener parámetros de la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        let invitationData = null;
+        
+        // Intentar obtener datos de la invitación desde localStorage o URL
+        function loadInvitationData() {
+            // En un caso real, estos datos vendrían del backend
+            // Por ahora, los simulamos
+            const data = {
+                business_name: 'Tu Negocio',
+                role: 'Empleado',
+                email: 'invitado@ejemplo.com'
+            };
+            
+            document.getElementById('businessName').textContent = data.business_name;
+            document.getElementById('role').textContent = data.role;
+            document.getElementById('inviteEmail').textContent = data.email;
+            
+            invitationData = data;
+        }
+        
+        // Función principal para redirigir a la tienda correcta
+        function redirectToStore() {
+            const userAgent = navigator.userAgent;
+            let storeUrl;
+            
+            if (/iPad|iPhone|iPod/.test(userAgent)) {
+                // iOS - App Store
+                storeUrl = 'https://apps.apple.com/app/order-manager/id1234567890';
+            } else if (/Android/.test(userAgent)) {
+                // Android - Play Store
+                storeUrl = 'https://play.google.com/store/apps/details?id=com.orderManager.app';
+            } else {
+                // Desktop - mostrar ambas opciones
+                showDownloadOptions();
+                return;
+            }
+            
+            // Abrir la tienda correspondiente
+            window.open(storeUrl, '_blank');
+        }
+        
+        // Función para intentar abrir la app (mantener como backup)
+        function tryOpenApp() {
+            const deepLink = 'myapp://invitation';
+            const statusEl = document.getElementById('status');
+            
+            // Mostrar estado de carga
+            statusEl.className = 'status';
+            statusEl.style.display = 'block';
+            statusEl.innerHTML = '🔄 Intentando abrir Order Manager...';
+            
+            // Crear iframe invisible para intentar abrir la app
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = deepLink;
+            document.body.appendChild(iframe);
+            
+            // Timer para detectar si la app no se abrió
+            let timeout = setTimeout(() => {
+                // La app no está instalada, redirigir a tienda
+                statusEl.className = 'status error';
+                statusEl.innerHTML = '⚠️ Order Manager no está instalado. Redirigiendo a la tienda...';
+                
+                setTimeout(() => {
+                    redirectToStore();
+                }, 2000);
+                
+                // Limpiar iframe
+                document.body.removeChild(iframe);
+            }, 2000);
+            
+            // Si la app se abre, la página se pondrá en background
+            window.addEventListener('blur', () => {
+                clearTimeout(timeout);
+                statusEl.className = 'status success';
+                statusEl.innerHTML = '✅ ¡Abriendo Order Manager!';
+                
+                setTimeout(() => {
+                    document.body.removeChild(iframe);
+                }, 1000);
+            });
+        }
+        
+        // Obtener link de descarga según la plataforma
+        function getDownloadLink() {
+            const userAgent = navigator.userAgent;
+            
+            if (/iPad|iPhone|iPod/.test(userAgent)) {
+                // iOS - App Store
+                return 'https://apps.apple.com/app/order-manager/id1234567890'; // Reemplaza con tu App Store ID
+            } else if (/Android/.test(userAgent)) {
+                // Android - Play Store  
+                return 'https://play.google.com/store/apps/details?id=com.orderManager.app'; // Reemplaza con tu package name
+            } else {
+                // Desktop u otros - mostrar opciones
+                return '#';
+            }
+        }
+        
+        // Función para mostrar ambas opciones en desktop
+        function showDownloadOptions() {
+            const buttonsContainer = document.querySelector('.buttons');
+            buttonsContainer.innerHTML = `
+                <a href="https://apps.apple.com/app/order-manager/id1234567890" class="btn btn-primary" style="margin: 5px;">
+                    🍎 Descargar para iOS
+                </a>
+                <a href="https://play.google.com/store/apps/details?id=com.orderManager.app" class="btn btn-primary" style="margin: 5px;">
+                    🤖 Descargar para Android
+                </a>
+            `;
+        }
+        
+        // Cargar datos al iniciar
+        loadInvitationData();
+        
+        // Auto-redirigir a tienda después de 2 segundos si es móvil
+        setTimeout(() => {
+            const userAgent = navigator.userAgent;
+            if (/iPad|iPhone|iPod|Android/.test(userAgent)) {
+                redirectToStore();
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Invitación - Order Manager</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #00AEEF; color: white; padding: 30px; text-align: center; border-radius: 8px; }
+        .content { padding: 30px 0; }
+        .button { background: #00AEEF; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 10px; }
+        .info { background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .email { background: #00AEEF; color: white; padding: 3px 8px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📱 Order Manager</h1>
+        <p>Invitación de equipo</p>
+    </div>
+    
+    <div class="content">
+        <h2>¡Has sido invitado!</h2>
+        <p>Únete a <strong>{{.Data.business_name}}</strong> como <strong>{{.Data.role}}</strong></p>
+        
+        <div class="info">
+            <strong>Invitado por:</strong> {{.Data.invited_by_name}}<br>
+            <strong>Tu email:</strong> <span class="email">{{.Email}}</span>
+        </div>
+        
+        <p><strong>Para acceder:</strong></p>
+        <p>1. Toca "📱 Abrir Order Manager" (si tienes Expo Go)<br>
+        2. Si no tienes Expo Go, descárgalo de tu tienda<br>
+        3. Luego toca "📱 Abrir Order Manager"<br>
+        4. Crea cuenta con tu email<br>
+        5. ¡Listo!</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="exp://10.0.0.98:8081" class="button">📱 Abrir Order Manager</a>
+        </div>
+        
+        <p><strong>Si no tienes Expo Go:</strong></p>
+        <div style="text-align: center; margin: 20px 0;">
+            <a href="https://apps.apple.com/do/app/expo-go/id982107779" class="button">🍎 iOS - App Store</a>
+            <a href="https://play.google.com/store/apps/details?id=host.exp.exponent" class="button">🤖 Android - Play Store</a>
+        </div>
+        
+        <p><small>Esta invitación expira en 7 días</small></p>
+    </div>
+</body>
+</html>
