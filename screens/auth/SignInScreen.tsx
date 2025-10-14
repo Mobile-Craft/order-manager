@@ -10,8 +10,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Modal,
 } from 'react-native';
-import { Mail, Lock, LogIn } from 'lucide-react-native';
+import { Mail, Lock, LogIn, X, Users, Info } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 import { theme } from '@/lib/theme';
 
@@ -35,6 +36,14 @@ export default function SignInScreen({
 
   const checkPendingInvitations = async () => {
     // Esta función se puede expandir para mostrar invitaciones pendientes
+  };
+
+  const handleInvitationInfo = () => {
+    setShowInvitationInfo(true);
+  };
+
+  const closeInvitationModal = () => {
+    setShowInvitationInfo(false);
   };
 
   const handleSignIn = async () => {
@@ -125,7 +134,7 @@ export default function SignInScreen({
           </View>
           <TouchableOpacity
             style={styles.invitationButton}
-            onPress={() => setShowInvitationInfo(true)}
+            onPress={handleInvitationInfo}
           >
             <Text style={styles.invitationText}>
               ¿Fuiste invitado a un negocio?
@@ -133,6 +142,126 @@ export default function SignInScreen({
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Modal de información para usuarios invitados */}
+      <Modal
+        visible={showInvitationInfo}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        transparent={false}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Usuario Invitado</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={closeInvitationModal}
+            >
+              <X size={24} color={theme.colors.primaryDark} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            <View style={styles.infoSection}>
+              <View style={styles.iconContainer}>
+                <Users size={48} color={theme.colors.primary} />
+              </View>
+              
+              <Text style={styles.infoTitle}>
+                ¿Recibiste una invitación por email?
+              </Text>
+              
+              <Text style={styles.infoDescription}>
+                Si fuiste invitado a unirte a un negocio, sigue estos pasos:
+              </Text>
+
+              <View style={styles.stepsList}>
+                <View style={styles.stepItem}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>1</Text>
+                  </View>
+                  <View style={styles.stepContent}>
+                    <Text style={styles.stepTitle}>Revisa tu email</Text>
+                    <Text style={styles.stepDescription}>
+                      Busca un correo con el asunto "Confirma tu cuenta" y un código de verificación
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.stepItem}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>2</Text>
+                  </View>
+                  <View style={styles.stepContent}>
+                    <Text style={styles.stepTitle}>Obtén tu contraseña temporal</Text>
+                    <Text style={styles.stepDescription}>
+                      Contacta a la persona que te invitó para obtener tu contraseña temporal
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.stepItem}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>3</Text>
+                  </View>
+                  <View style={styles.stepContent}>
+                    <Text style={styles.stepTitle}>Inicia sesión</Text>
+                    <Text style={styles.stepDescription}>
+                      Usa tu email y la contraseña temporal para iniciar sesión en esta pantalla
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.stepItem}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>4</Text>
+                  </View>
+                  <View style={styles.stepContent}>
+                    <Text style={styles.stepTitle}>Verifica tu email</Text>
+                    <Text style={styles.stepDescription}>
+                      Ingresa el código de verificación que recibiste por email
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.stepItem}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>5</Text>
+                  </View>
+                  <View style={styles.stepContent}>
+                    <Text style={styles.stepTitle}>Completa tu perfil</Text>
+                    <Text style={styles.stepDescription}>
+                      Después de verificar tu email, aparecerá automáticamente una pantalla para que ingreses tu nombre completo y configures tu perfil
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.alertBox}>
+                <Info size={20} color="#F59E0B" />
+                <Text style={styles.alertText}>
+                  Si no recibiste el email de invitación, revisa tu carpeta de spam o contacta al administrador
+                </Text>
+              </View>
+
+            </View>
+          </ScrollView>
+
+          <View style={styles.modalFooter}>
+            
+            <TouchableOpacity
+              style={styles.gotItButton}
+              onPress={() => {
+                closeInvitationModal();
+                // Llenar automáticamente el email si ya hay uno en el campo
+                // El usuario solo necesitará agregar la contraseña temporal
+              }}
+            >
+              <Text style={styles.gotItButtonText}>Continuar</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -233,5 +362,146 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     textDecorationLine: 'underline',
+  },
+  
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1F2937',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 20,
+  },
+  infoSection: {
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 80,
+    height: 80,
+    backgroundColor: theme.colors.primary + '20',
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  infoTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  infoDescription: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  stepsList: {
+    width: '100%',
+    marginBottom: 24,
+  },
+  stepItem: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    alignItems: 'flex-start',
+  },
+  stepNumber: {
+    width: 28,
+    height: 28,
+    backgroundColor: theme.colors.primary,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    marginTop: 2,
+  },
+  stepNumberText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  stepContent: {
+    flex: 1,
+  },
+  stepTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  stepDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 20,
+  },
+  alertBox: {
+    flexDirection: 'row',
+    backgroundColor: '#FEF3C7',
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    alignItems: 'flex-start',
+    width: '100%',
+    marginBottom: 16,
+  },
+  alertText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#92400E',
+    marginLeft: 12,
+    lineHeight: 20,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    gap: 12,
+  },
+  secondaryButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: 'white',
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  gotItButton: {
+    flex: 1,
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  gotItButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
   },
 });

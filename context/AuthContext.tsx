@@ -21,8 +21,14 @@ interface AuthContextType {
   // Completar perfil/empresa (requiere sesión ya activa por OTP)
   completeRegistration: (fullName: string, businessName: string) => Promise<void>;
 
+  // Completar registro de usuario invitado
+  completeInvitedUserRegistration: (fullName: string) => Promise<void>;
+
   // Reenviar OTP de signup
   resendConfirmation: (email: string) => Promise<void>;
+
+  // Verificar si el usuario es un invitado pendiente
+  isInvitedUser: () => boolean;
 
   // Legacy
   login: (role: string, name: string) => void;
@@ -153,6 +159,27 @@ const completeRegistration = async (fullName: string, businessName: string) => {
 };
 
 
+  // Completar registro de usuario invitado
+  const completeInvitedUserRegistration = async (fullName: string) => {
+    const { data, error } = await supabase
+      .rpc('complete_invited_user_registration', {
+        full_name_param: fullName
+      });
+
+    if (error) throw error;
+    if (!data.success) throw new Error(data.message);
+
+    // Recargar el perfil del usuario
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (authUser) await loadUserProfile(authUser);
+  };
+
+  // Verificar si el usuario es un invitado pendiente
+  const isInvitedUser = (): boolean => {
+    // Un usuario invitado es aquel que está autenticado pero no tiene perfil
+    return Boolean(user?.id && !user?.profile);
+  };
+
   const resendConfirmation = async (email: string) => {
     const { error } = await supabase.auth.resend({
       type: 'signup', // ← Reenvía OTP de SIGNUP
@@ -173,7 +200,9 @@ const completeRegistration = async (fullName: string, businessName: string) => {
       verifySignUpCode,
       signIn, signOut,
       completeRegistration,
+      completeInvitedUserRegistration,
       resendConfirmation,
+      isInvitedUser,
       login, logout,
       isAdmin,
     }}>

@@ -199,7 +199,33 @@ export default function UsersScreen() {
 
       if (passwordError) throw passwordError;
 
-      const { error } = await supabase
+      // Crear usuario en Supabase Auth con email y contraseña temporal
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: inviteEmail.trim().toLowerCase(),
+        password: tempPasswordData,
+        email_confirm: false, // El usuario necesitará confirmar su email
+        user_metadata: {
+          invited_by: user?.profile?.id,
+          business_id: user?.business?.id,
+          role: inviteRole,
+          is_invitation: true
+        }
+      });
+
+      if (authError) {
+        // Si el usuario ya existe en Auth pero no en nuestras tablas
+        if (authError.message.includes('already registered')) {
+          Alert.alert(
+            'Error', 
+            'Ya existe una cuenta con este correo electrónico. El usuario debe usar la función de recuperación de contraseña.'
+          );
+          return;
+        }
+        throw authError;
+      }
+
+      // Crear la invitación en nuestra tabla
+      const { error: invitationError } = await supabase
         .from('business_invitations')
         .insert([{
           business_id: user?.business?.id,
@@ -207,13 +233,18 @@ export default function UsersScreen() {
           role: inviteRole,
           invited_by: user?.profile?.id,
           temp_password: tempPasswordData,
+          auth_user_id: authData.user.id
         }]);
 
-      if (error) throw error;
+      if (invitationError) throw invitationError;
 
+      // El usuario recibirá un email automático de confirmación de Supabase
       Alert.alert(
         'Invitación Enviada',
-        `Se ha enviado una invitación a ${inviteEmail} para unirse como ${inviteRole}.\n\nContraseña temporal: ${tempPasswordData}\n\nComparte esta información con el usuario.`,
+        `Se ha enviado una invitación a ${inviteEmail} para unirse como ${inviteRole}.\n\n` +
+        `El usuario recibirá un correo de confirmación con un código OTP.\n\n` +
+        `Contraseña temporal: ${tempPasswordData}\n\n` +
+        `Comparte esta contraseña con el usuario para que pueda iniciar sesión después de confirmar su email.`,
         [
           {
             text: 'Copiar Contraseña',
@@ -232,7 +263,7 @@ export default function UsersScreen() {
       loadInvitations();
     } catch (error) {
       console.error('Error sending invitation:', error);
-      Alert.alert('Error', 'No se pudo enviar la invitación');
+      Alert.alert('Error', 'No se pudo enviar la invitación: ' + (error as any).message);
     } finally {
       setInviteLoading(false);
     }

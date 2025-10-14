@@ -6,6 +6,7 @@ import SignInScreen from '@/screens/auth/SignInScreen';
 import SignUpScreen from '@/screens/auth/SignUpScreen';
 import EmailConfirmationScreen from '@/screens/auth/EmailConfirmationScreen';
 import ProfileSetupScreen from '@/screens/auth/ProfileSetupScreen';
+import InvitedUserSetupScreen from '@/screens/auth/InvitedUserSetupScreen';
 import OrdersScreen from '@/screens/OrdersScreen';
 import KitchenScreen from '@/screens/KitchenScreen';
 import HistoryScreen from '@/screens/HistoryScreen';
@@ -133,7 +134,7 @@ function AuthStack() {
 }
 
 export function AuthNavigator() {
-  const { user, loading } = useAuth();
+  const { user, loading, isInvitedUser } = useAuth();
 
   if (loading) {
     return <LoadingSpinner message="Cargando..." />;
@@ -142,6 +143,11 @@ export function AuthNavigator() {
   if (!user) {
     // Usuario no autenticado - mostrar flujo de autenticación
     return <AuthStack />;
+  }
+
+  // Usuario autenticado pero es un invitado sin perfil completo
+  if (isInvitedUser()) {
+    return <InvitedUserSetupScreen />;
   }
 
   // Usuario autenticado - verificar si tiene perfil completo
