@@ -19,7 +19,9 @@ interface SignInScreenProps {
   onNavigateToSignUp: () => void;
 }
 
-export default function SignInScreen({ onNavigateToSignUp }: SignInScreenProps) {
+export default function SignInScreen({
+  onNavigateToSignUp,
+}: SignInScreenProps) {
   const { signIn, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,7 +61,7 @@ export default function SignInScreen({ onNavigateToSignUp }: SignInScreenProps) 
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
@@ -120,14 +122,15 @@ export default function SignInScreen({ onNavigateToSignUp }: SignInScreenProps) 
             <TouchableOpacity onPress={onNavigateToSignUp}>
               <Text style={styles.signUpLink}>Crear Cuenta</Text>
             </TouchableOpacity>
-          
-          <TouchableOpacity 
+          </View>
+          <TouchableOpacity
             style={styles.invitationButton}
             onPress={() => setShowInvitationInfo(true)}
           >
-            <Text style={styles.invitationText}>¿Fuiste invitado a un negocio?</Text>
+            <Text style={styles.invitationText}>
+              ¿Fuiste invitado a un negocio?
+            </Text>
           </TouchableOpacity>
-          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

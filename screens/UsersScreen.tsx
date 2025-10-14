@@ -14,8 +14,6 @@ import {
   Users,
   Plus,
   Mail,
-  UserCheck,
-  UserX,
   Menu,
   Crown,
   ShoppingCart,
@@ -25,7 +23,6 @@ import {
   X,
   Edit,
   Key,
-  Copy,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerActions } from '@react-navigation/native';
