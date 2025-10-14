@@ -18,12 +18,12 @@ interface EmailConfirmationScreenProps {
   onNavigateBack: () => void;
 }
 
-export default function EmailConfirmationScreen({ 
-  email, 
+export default function EmailConfirmationScreen({
+  email,
   onNavigateToProfile,
-  onNavigateBack 
+  onNavigateBack,
 }: EmailConfirmationScreenProps) {
-  const { resendConfirmation } = useAuth();
+  const { resendConfirmation , verifySignUpCode} = useAuth();
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
@@ -58,7 +58,7 @@ export default function EmailConfirmationScreen({
     }
 
     // Auto-verify when all digits are entered
-    if (newCode.every(digit => digit !== '') && value) {
+    if (newCode.every((digit) => digit !== '') && value) {
       handleVerifyCode(newCode.join(''));
     }
   };
@@ -72,25 +72,12 @@ export default function EmailConfirmationScreen({
   const handleVerifyCode = async (verificationCode: string) => {
     try {
       setLoading(true);
-      // In a real implementation, you would verify the code with Supabase
-      // For now, we'll simulate verification and proceed to profile setup
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      Alert.alert(
-        'Correo Verificado',
-        'Tu correo ha sido verificado exitosamente.',
-        [
-          {
-            text: 'Continuar',
-            onPress: onNavigateToProfile
-          }
-        ]
-      );
+      await verifySignUpCode(email, verificationCode); // ← VERIFICA DE VERDAD
+      // Ya hay sesión -> puedes ir a empresa/perfil
+      onNavigateToProfile();
     } catch (error: any) {
       console.error('Verification error:', error);
-      Alert.alert('Error', 'Código de verificación inválido');
+      Alert.alert('Error', error.message || 'Código de verificación inválido');
       setCode(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
     } finally {
@@ -102,12 +89,12 @@ export default function EmailConfirmationScreen({
     try {
       setResendLoading(true);
       await resendConfirmation(email);
-      
+
       Alert.alert(
         'Código Reenviado',
         'Te hemos enviado un nuevo código de verificación.'
       );
-      
+
       setCanResend(false);
       setCountdown(60);
     } catch (error: any) {
@@ -138,14 +125,13 @@ export default function EmailConfirmationScreen({
             {code.map((digit, index) => (
               <TextInput
                 key={index}
-                ref={(ref) => inputRefs.current[index] = ref}
-                style={[
-                  styles.codeInput,
-                  digit && styles.codeInputFilled
-                ]}
+                ref={(ref) => (inputRefs.current[index] = ref)}
+                style={[styles.codeInput, digit && styles.codeInputFilled]}
                 value={digit}
                 onChangeText={(value) => handleCodeChange(value, index)}
-                onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, index)}
+                onKeyPress={({ nativeEvent }) =>
+                  handleKeyPress(nativeEvent.key, index)
+                }
                 keyboardType="numeric"
                 maxLength={1}
                 selectTextOnFocus
@@ -156,23 +142,32 @@ export default function EmailConfirmationScreen({
 
         <View style={styles.actions}>
           <TouchableOpacity
-            style={[styles.resendButton, !canResend && styles.resendButtonDisabled]}
+            style={[
+              styles.resendButton,
+              !canResend && styles.resendButtonDisabled,
+            ]}
             onPress={handleResendCode}
             disabled={!canResend || resendLoading}
           >
-            <RefreshCw size={16} color={canResend ? theme.colors.primary : '#9CA3AF'} />
-            <Text style={[styles.resendText, !canResend && styles.resendTextDisabled]}>
-              {canResend 
-                ? (resendLoading ? 'Reenviando...' : 'Reenviar código')
-                : `Reenviar en ${countdown}s`
-              }
+            <RefreshCw
+              size={16}
+              color={canResend ? theme.colors.primary : '#9CA3AF'}
+            />
+            <Text
+              style={[
+                styles.resendText,
+                !canResend && styles.resendTextDisabled,
+              ]}
+            >
+              {canResend
+                ? resendLoading
+                  ? 'Reenviando...'
+                  : 'Reenviar código'
+                : `Reenviar en ${countdown}s`}
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={onNavigateBack}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={onNavigateBack}>
             <Text style={styles.backButtonText}>Cambiar correo</Text>
           </TouchableOpacity>
         </View>

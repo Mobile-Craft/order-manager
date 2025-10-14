@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -31,7 +31,8 @@ import { theme } from '@/lib/theme';
 
 export default function ProductsScreen() {
   const navigation = useNavigation();
-  const { isAdmin } = useAuth();
+  // 👇 Trae también user del contexto
+  const { user, isAdmin } = useAuth();
 
   const [products, setProducts] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -52,14 +53,18 @@ export default function ProductsScreen() {
     category: '',
   });
 
+  // Carga cuando ya tenemos business_id disponible
   useEffect(() => {
+    if (!user?.business?.id) {
+      setLoading(false);
+      return;
+    }
     loadProducts();
     loadCategories();
-  }, []);
+  }, [user?.business?.id]);
 
   const loadCategories = async () => {
     if (!user?.business?.id) return;
-
     try {
       const { data, error } = await supabase
         .from('menu_items')
@@ -70,7 +75,9 @@ export default function ProductsScreen() {
       if (error) throw error;
 
       const uniqueCategories = [
-        ...new Set((data || []).map((item) => item.category).filter(Boolean)),
+        ...new Set(
+          (data || []).map((item: any) => item.category).filter(Boolean)
+        ),
       ];
       setCategories(uniqueCategories);
     } catch (error) {
@@ -83,7 +90,6 @@ export default function ProductsScreen() {
       setLoading(false);
       return;
     }
-
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -105,11 +111,7 @@ export default function ProductsScreen() {
 
   const openCreateModal = () => {
     setEditingProduct(null);
-    setFormData({
-      name: '',
-      price: '',
-      category: '',
-    });
+    setFormData({ name: '', price: '', category: '' }); // ninguna categoría preseleccionada
     setShowModal(true);
   };
 
@@ -126,11 +128,7 @@ export default function ProductsScreen() {
   const closeModal = () => {
     setShowModal(false);
     setEditingProduct(null);
-    setFormData({
-      name: '',
-      price: '',
-      category: categories[0] || '',
-    });
+    setFormData({ name: '', price: '', category: '' });
   };
 
   // ==== Sheet interna de categoría (no es otro Modal) ====
@@ -150,20 +148,13 @@ export default function ProductsScreen() {
       Alert.alert('Error', 'El nombre de la categoría es requerido');
       return;
     }
-
     if (categories.includes(name)) {
       Alert.alert('Error', 'Esta categoría ya existe');
       return;
     }
-
     const newCategories = [...categories, name].sort();
     setCategories(newCategories);
-
-    // Si el modal de producto está abierto y no hay categoría seleccionada o quieres auto-seleccionar la nueva
-    if (showModal) {
-      setFormData((prev) => ({ ...prev, category: name }));
-    }
-
+    if (showModal) setFormData((prev) => ({ ...prev, category: name }));
     closeCategorySheet();
     Alert.alert('Éxito', 'Nueva categoría agregada');
   };
@@ -173,11 +164,8 @@ export default function ProductsScreen() {
       Alert.alert('Error', 'El nombre del producto es requerido');
       return false;
     }
-    if (
-      !formData.price.trim() ||
-      isNaN(Number(formData.price)) ||
-      Number(formData.price) <= 0
-    ) {
+    const priceNum = Number(formData.price);
+    if (!formData.price.trim() || isNaN(priceNum) || priceNum <= 0) {
       Alert.alert('Error', 'El precio debe ser un número válido mayor a 0');
       return false;
     }
@@ -188,7 +176,7 @@ export default function ProductsScreen() {
     return true;
   };
 
-  const isFormValid = React.useMemo(() => {
+  const isFormValid = useMemo(() => {
     const nameOk = formData.name.trim().length > 0;
     const priceNum = Number(formData.price);
     const priceOk = !!formData.price.trim() && !isNaN(priceNum) && priceNum > 0;
@@ -202,7 +190,6 @@ export default function ProductsScreen() {
       Alert.alert('Error', 'No hay contexto de negocio disponible');
       return;
     }
-
     try {
       const productData = {
         business_id: user.business.id,
@@ -215,19 +202,17 @@ export default function ProductsScreen() {
         const { error } = await supabase
           .from('menu_items')
           .update(productData)
-          .eq('id', editingProduct.id);
-
+          .eq('id', editingProduct.id)
+          .eq('business_id', user.business.id);
         if (error) throw error;
         Alert.alert('Éxito', 'Producto actualizado correctamente');
       } else {
-        // Genera un id legible (puedes cambiarlo por UUID si prefieres)
         const newId = `${formData.category
           .toLowerCase()
           .replace(/\s+/g, '_')}_${Date.now()}`;
         const { error } = await supabase
           .from('menu_items')
           .insert([{ ...productData, id: newId }]);
-
         if (error) throw error;
         Alert.alert('Éxito', 'Producto creado correctamente');
       }
@@ -242,6 +227,7 @@ export default function ProductsScreen() {
   };
 
   const deleteProduct = async (product: MenuItem) => {
+    if (!user?.business?.id) return;
     Alert.alert(
       'Confirmar eliminación',
       `¿Estás seguro de que quieres eliminar "${product.name}"?`,
@@ -255,8 +241,8 @@ export default function ProductsScreen() {
               const { error } = await supabase
                 .from('menu_items')
                 .delete()
-                .eq('id', product.id);
-
+                .eq('id', product.id)
+                .eq('business_id', user.business.id);
               if (error) throw error;
               Alert.alert('Éxito', 'Producto eliminado correctamente');
               loadProducts();
@@ -293,9 +279,7 @@ export default function ProductsScreen() {
   }
 
   const categorizedProducts = products.reduce((acc, product) => {
-    if (!acc[product.category]) {
-      acc[product.category] = [];
-    }
+    if (!acc[product.category]) acc[product.category] = [];
     acc[product.category].push(product);
     return acc;
   }, {} as Record<string, MenuItem[]>);
@@ -470,7 +454,7 @@ export default function ProductsScreen() {
               onPress={isFormValid ? saveProduct : undefined}
               style={[
                 styles.saveButton,
-                !isFormValid && styles.saveButtonDisabled, // 👈 gris/inactivo
+                !isFormValid && styles.saveButtonDisabled,
               ]}
             >
               <Save size={20} color="white" />
@@ -729,10 +713,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   saveButtonText: { fontSize: 16, fontWeight: '600', color: 'white' },
-  saveButtonDisabled: {
-    backgroundColor: '#858b92', // gris
-    opacity: 0.7,
-  },
+  saveButtonDisabled: { backgroundColor: '#858b92', opacity: 0.7 },
+
   // === Sheet interno de Nueva Categoría ===
   sheetOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -753,7 +735,6 @@ const styles = StyleSheet.create({
     height: 220,
   },
 
-  // Reutilizamos estilos del modal de categoría anterior
   categoryModalTitle: {
     fontSize: 20,
     fontWeight: 'bold',

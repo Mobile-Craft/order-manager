@@ -1,17 +1,30 @@
+// context/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
-import { AuthUser, UserProfile, Business } from '@/types/Auth';
+import { AuthUser } from '@/types/Auth';
 import { User } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
+
+  // Registro con email+password (envía OTP)
   signUp: (email: string, password: string) => Promise<{ needsConfirmation: boolean }>;
+
+  // Verificar OTP de signup (ACTUALIZA sesión)
+  verifySignUpCode: (email: string, code: string) => Promise<void>;
+
+  // Login normal (después del registro)
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+
+  // Completar perfil/empresa (requiere sesión ya activa por OTP)
   completeRegistration: (fullName: string, businessName: string) => Promise<void>;
+
+  // Reenviar OTP de signup
   resendConfirmation: (email: string) => Promise<void>;
-  // Legacy methods for backward compatibility
+
+  // Legacy
   login: (role: string, name: string) => void;
   logout: () => void;
   isAdmin: boolean;
@@ -24,16 +37,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        loadUserProfile(session.user);
-      } else {
-        setLoading(false);
-      }
+      if (session?.user) loadUserProfile(session.user);
+      else setLoading(false);
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_IN' && session?.user) {
@@ -44,7 +52,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     );
-
     return () => subscription.unsubscribe();
   }, []);
 
@@ -52,51 +59,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('user_profiles')
-        .select(`
-          *,
-          businesses (*)
-        `)
+        .select(`*, businesses (*)`)
         .eq('user_id', authUser.id)
         .single();
 
       if (error) {
-        console.error('Error loading user profile:', error);
+        // Es normal que NO exista aún hasta completar empresa
+        setUser({
+          id: authUser.id,
+          email: authUser.email!,
+          profile: null as any,
+          business: null as any,
+        });
         setLoading(false);
         return;
       }
 
-      if (data) {
-        setUser({
-          id: authUser.id,
-          email: authUser.email!,
-          profile: data,
-          business: data.businesses,
-        });
-      }
-    } catch (error) {
-      console.error('Error in loadUserProfile:', error);
+      setUser({
+        id: authUser.id,
+        email: authUser.email!,
+        profile: data,
+        business: data?.businesses,
+      });
+    } catch (e) {
+      console.error('Error in loadUserProfile:', e);
     } finally {
       setLoading(false);
     }
   };
 
+  // Registro: crea user + manda OTP. Normalmente session === null (needsConfirmation = true)
   const signUp = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
-      password,
+      password, // ← pides password en el registro
     });
-
     if (error) throw error;
-
     return { needsConfirmation: !data.session };
   };
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+  // VERIFICAR OTP DE SIGNUP: aquí se crea/activa la sesión
+  const verifySignUpCode = async (email: string, code: string) => {
+    const { data, error } = await supabase.auth.verifyOtp({
       email,
-      password,
+      token: code,
+      type: 'signup', // ← IMPORTANTE para flujos email+password
     });
+    if (error) throw error;
+    // data.session ahora debe existir; onAuthStateChange disparará loadUserProfile()
+  };
 
+  // Login normal (ya con password)
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
   };
 
@@ -105,67 +120,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   };
 
-  const completeRegistration = async (fullName: string, businessName: string) => {
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser) throw new Error('No authenticated user');
+  
+const completeRegistration = async (fullName: string, businessName: string) => {
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+  if (!authUser) throw new Error('No authenticated user');
 
-    // Create business
-    const { data: business, error: businessError } = await supabase
-      .from('businesses')
-      .insert([{ name: businessName }])
-      .select()
-      .single();
+  // Crear negocio con el usuario actual como dueño
+  const { data: business, error: businessError } = await supabase
+    .from('businesses')
+    .insert([{ 
+      name: businessName,
+      owner_id: authUser.id, // 👈 lo agregamos aquí
+    }])
+    .select()
+    .single();
 
-    if (businessError) throw businessError;
+  if (businessError) throw businessError;
 
-    // Create user profile
-    const { error: profileError } = await supabase
-      .from('user_profiles')
-      .insert([{
-        user_id: authUser.id,
-        business_id: business.id,
-        full_name: fullName,
-        role: 'Admin'
-      }]);
+  // Crear perfil vinculado al negocio y usuario
+  const { error: profileError } = await supabase
+    .from('user_profiles')
+    .insert([{
+      user_id: authUser.id,
+      business_id: business.id,
+      full_name: fullName,
+      role: 'Admin',
+    }]);
 
-    if (profileError) throw profileError;
+  if (profileError) throw profileError;
 
-    // Reload user profile
-    await loadUserProfile(authUser);
-  };
+  await loadUserProfile(authUser);
+};
+
 
   const resendConfirmation = async (email: string) => {
     const { error } = await supabase.auth.resend({
-      type: 'signup',
+      type: 'signup', // ← Reenvía OTP de SIGNUP
       email,
     });
-
     if (error) throw error;
   };
 
-  // Legacy methods for backward compatibility
-  const login = (role: string, name: string) => {
-    // This is kept for backward compatibility but won't be used in the new flow
-    console.warn('Legacy login method called');
-  };
-
-  const logout = async () => {
-    await signOut();
-  };
-
+  // Legacy
+  const login = () => console.warn('Legacy login method called');
+  const logout = async () => { await signOut(); };
   const isAdmin = user?.profile?.role === 'Admin';
 
   return (
     <AuthContext.Provider value={{
-      user,
-      loading,
+      user, loading,
       signUp,
-      signIn,
-      signOut,
+      verifySignUpCode,
+      signIn, signOut,
       completeRegistration,
       resendConfirmation,
-      login,
-      logout,
+      login, logout,
       isAdmin,
     }}>
       {children}
@@ -174,9 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
+  return ctx;
 }
