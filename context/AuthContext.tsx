@@ -7,6 +7,7 @@ import { User } from '@supabase/supabase-js';
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
+  hasInvitation: boolean | null; // null = aún no verificado, true/false = verificado
 
   // Registro con email+password (envía OTP)
   signUp: (email: string, password: string) => Promise<{ needsConfirmation: boolean }>;
@@ -41,6 +42,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasInvitation, setHasInvitation] = useState<boolean | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -54,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await loadUserProfile(session.user);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
+          setHasInvitation(null);
           setLoading(false);
         }
       }
@@ -84,8 +87,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (invitation && invitation.length > 0 && !invitationError) {
           console.log('🎉 Found pending invitation, user needs to complete profile');
+          setHasInvitation(true);
         } else {
           console.log('ℹ️ No pending invitation found, user needs to create business or be invited');
+          setHasInvitation(false);
         }
 
         // Es normal que NO exista aún hasta completar empresa
@@ -105,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile: data,
         business: data?.businesses,
       });
+      setHasInvitation(null); // Ya tiene perfil, resetear estado de invitación
     } catch (e) {
       console.error('Error in loadUserProfile:', e);
     } finally {
@@ -255,8 +261,8 @@ const completeRegistration = async (fullName: string, businessName: string) => {
 
   // Verificar si el usuario es un invitado pendiente
   const isInvitedUser = (): boolean => {
-    // Un usuario invitado es aquel que está autenticado pero no tiene perfil
-    return Boolean(user?.id && !user?.profile);
+    // Ahora usamos el estado hasInvitation que se establece en loadUserProfile
+    return Boolean(user?.id && !user?.profile && hasInvitation === true);
   };
 
   const resendConfirmation = async (email: string) => {
@@ -274,7 +280,7 @@ const completeRegistration = async (fullName: string, businessName: string) => {
 
   return (
     <AuthContext.Provider value={{
-      user, loading,
+      user, loading, hasInvitation,
       signUp,
       verifySignUpCode,
       signIn, signOut,

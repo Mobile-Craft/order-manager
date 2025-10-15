@@ -232,7 +232,7 @@ export default function UsersScreen() {
           email: inviteEmail.trim().toLowerCase(),
           options: {
             shouldCreateUser: false,
-            emailRedirectTo: `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/invitation-redirect`,
+            emailRedirectTo: 'https://order-manager.com/invitation-accepted', // URL simple
             data: {
               type: 'business_invitation',
               business_name: user?.business?.name || 'Order Manager',
@@ -244,10 +244,10 @@ export default function UsersScreen() {
 
 Para completar tu registro:
 
-1. Descarga la aplicación Order Manager
-2. Toca "Crear Cuenta" 
-3. Usa este email: ${inviteEmail}
-4. Elige tu contraseña
+1. Descarga Expo Go desde tu tienda de aplicaciones
+2. Abre Expo Go y busca "Order Manager"
+3. Toca "Crear Cuenta" 
+4. Usa este email: ${inviteEmail}
 5. Verifica tu email con el código OTP
 6. Completa tu perfil
 

@@ -134,7 +134,7 @@ function AuthStack() {
 }
 
 export function AuthNavigator() {
-  const { user, loading, isInvitedUser } = useAuth();
+  const { user, loading, isInvitedUser, hasInvitation } = useAuth();
 
   if (loading) {
     return <LoadingSpinner message="Cargando..." />;
