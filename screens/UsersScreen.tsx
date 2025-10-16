@@ -198,7 +198,7 @@ export default function UsersScreen() {
       console.log('🏢 Business ID:', user?.business?.id);
       console.log('👤 User ID (invited_by):', user?.id);
       
-      // Crear la invitación en la base de datos
+      // Crear la invitación en la base de datos PRIMERO
       console.log('💾 Insertando invitación en base de datos...');
       
       const { data: insertedData, error: invitationError } = await supabase
@@ -225,65 +225,80 @@ export default function UsersScreen() {
       
       console.log('✅ Invitación insertada correctamente:', insertedData);
 
-      // Usar el sistema nativo de Supabase para enviar correo
+      // Intentar enviar correo usando función edge corregida (ya no crea usuarios)
+      // La función edge ahora usa servicios externos en lugar de generateLink
       console.log('📧 Enviando correo de invitación...');
+      let emailSent = false;
+      
       try {
-        const { error: emailError } = await supabase.auth.signInWithOtp({
-          email: inviteEmail.trim().toLowerCase(),
-          options: {
-            shouldCreateUser: false,
-            emailRedirectTo: 'https://order-manager.com/invitation-accepted', // URL simple
-            data: {
-              type: 'business_invitation',
-              business_name: user?.business?.name || 'Order Manager',
-              business_id: user?.business?.id,
-              role: inviteRole,
-              invited_by_name: user?.profile?.full_name || user?.email?.split('@')[0] || 'Administrador',
-              invited_by_email: user?.email || '',
-              message: `Has sido invitado a unirte a ${user?.business?.name || 'Order Manager'} como ${inviteRole}. 
-
-Para completar tu registro:
-
-1. Descarga Expo Go desde tu tienda de aplicaciones
-2. Abre Expo Go y busca "Order Manager"
-3. Toca "Crear Cuenta" 
-4. Usa este email: ${inviteEmail}
-5. Verifica tu email con el código OTP
-6. Completa tu perfil
-
-¡El sistema detectará automáticamente tu invitación!
-
-Esta invitación expira en 7 días.
-
-¡Esperamos verte pronto en el equipo!
-
-Saludos,
-${user?.profile?.full_name || user?.email?.split('@')[0] || 'El equipo de ' + (user?.business?.name || 'Order Manager')}`
-            }
+        // Llamar a función edge corregida (sin creación de usuarios)
+        const { data: emailData, error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+          body: {
+            invitation_id: insertedData[0].id,
+            email: inviteEmail.trim().toLowerCase(),
+            role: inviteRole,
+            business_name: user?.business?.name || 'Order Manager',
+            admin_name: user?.profile?.full_name || user?.email?.split('@')[0] || 'Administrador',
+            expires_at: insertedData[0].expires_at
           }
         });
 
         if (emailError) {
-          console.warn('⚠️ No se pudo enviar correo automático:', emailError);
-          // No hacer throw porque la invitación ya está creada
+          console.warn('⚠️ Error en función edge:', emailError);
+          // La función puede fallar si no hay servicio de email configurado
         } else {
-          console.log('✅ Correo de invitación enviado exitosamente');
+          emailSent = true;
+          console.log('✅ Correo enviado exitosamente:', emailData);
         }
       } catch (emailError) {
-        console.warn('⚠️ Error en el envío de correo:', emailError);
+        console.warn('⚠️ Error al llamar función edge:', emailError);
       }
 
+      // Crear mensaje basado en el resultado del envío
+      const emailStatusMessage = emailSent 
+        ? `📧 Se ha enviado un correo automático con las instrucciones de registro.`
+        : `⚠️ No se pudo enviar correo automático (requiere configuración de servicio de email).\n\nPuedes compartir las instrucciones manualmente.`;
+
       Alert.alert(
-        'Invitación Enviada',
+        emailSent ? 'Invitación Enviada' : 'Invitación Creada',
         `✅ Se ha creado la invitación para ${inviteEmail} como ${inviteRole}.\n\n` +
-        `📧 Se ha enviado un correo con las instrucciones de registro.\n\n` +
-        `El correo incluye:\n` +
-        `• Link directo a la aplicación\n` +
-        `• Instrucciones paso a paso\n` +
-        `• Información del negocio y rol\n` +
-        `• Fecha de expiración (7 días)\n\n` +
-        `Si ${inviteEmail} no recibe el correo, revisa la carpeta de spam o reenvía la invitación.`,
-        [{ text: 'OK' }]
+        emailStatusMessage +
+        (emailSent ? '\n\nSi no recibe el correo, revisa spam.' : ''),
+        [
+          { text: 'OK' },
+          ...(!emailSent ? [{
+            text: 'Ver Instrucciones',
+            onPress: () => {
+              const invitationInstructions = `🎉 INVITACIÓN A ${user?.business?.name?.toUpperCase() || 'ORDER MANAGER'}
+
+Hola,
+
+${user?.profile?.full_name || 'El administrador'} te ha invitado como ${inviteRole}.
+
+📱 PASOS PARA UNIRTE:
+
+1️⃣ Descarga "Expo Go" desde App Store o Google Play
+2️⃣ Abre Expo Go y busca "Order Manager"  
+3️⃣ Toca "Crear Cuenta"
+4️⃣ Usa este email: ${inviteEmail}
+5️⃣ Verifica tu email con el código OTP
+6️⃣ Completa tu perfil
+
+✨ El sistema detectará automáticamente tu invitación.
+
+⏰ Expira: ${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('es-DO')}
+
+🔐 Como ${inviteRole} podrás:
+${inviteRole === 'Cajero' ? '• Crear órdenes\n• Procesar pagos\n• Ver estadísticas' : '• Ver órdenes de cocina\n• Marcar como preparadas\n• Gestionar flujo'}
+
+¡Esperamos verte pronto! 🚀`;
+
+              Alert.alert('Instrucciones para Compartir', invitationInstructions, [
+                { text: 'Cerrar' }
+              ]);
+            }
+          }] : [])
+        ]
       );
 
       setInviteEmail('');

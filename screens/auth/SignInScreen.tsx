@@ -12,20 +12,32 @@ import {
   ScrollView,
   Modal,
 } from 'react-native';
-import { Mail, Lock, LogIn, X, Users, Info } from 'lucide-react-native';
+import {
+  Mail,
+  Lock,
+  LogIn,
+  X,
+  Users,
+  Info,
+  EyeOff,
+  Eye,
+} from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 import { theme } from '@/lib/theme';
 
 interface SignInScreenProps {
   onNavigateToSignUp: () => void;
+  onNavigateToForgotPassword: () => void;
 }
 
 export default function SignInScreen({
   onNavigateToSignUp,
+  onNavigateToForgotPassword,
 }: SignInScreenProps) {
   const { signIn, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showInvitationInfo, setShowInvitationInfo] = useState(false);
 
@@ -108,9 +120,19 @@ export default function SignInScreen({
                   placeholderTextColor="#9CA3AF"
                   value={password}
                   onChangeText={setPassword}
-                  secureTextEntry
+                  secureTextEntry={!showPassword}
                   autoComplete="current-password"
                 />
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff size={20} color="#9CA3AF" />
+                  ) : (
+                    <Eye size={20} color="#9CA3AF" />
+                  )}
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -122,6 +144,16 @@ export default function SignInScreen({
               <LogIn size={20} color="white" />
               <Text style={styles.signInButtonText}>
                 {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.forgotPasswordButton}
+              onPress={onNavigateToForgotPassword}
+              disabled={loading}
+            >
+              <Text style={styles.forgotPasswordText}>
+                ¿Olvidaste tu contraseña?
               </Text>
             </TouchableOpacity>
           </View>
@@ -166,11 +198,11 @@ export default function SignInScreen({
               <View style={styles.iconContainer}>
                 <Users size={48} color={theme.colors.primary} />
               </View>
-              
+
               <Text style={styles.infoTitle}>
                 ¿Recibiste una invitación para unirte a un negocio?
               </Text>
-              
+
               <Text style={styles.infoDescription}>
                 Si fuiste invitado a unirte a un negocio, sigue estos pasos:
               </Text>
@@ -183,7 +215,8 @@ export default function SignInScreen({
                   <View style={styles.stepContent}>
                     <Text style={styles.stepTitle}>Crear cuenta nueva</Text>
                     <Text style={styles.stepDescription}>
-                      Usa "Crear Cuenta" en esta app con el email al que te enviaron la invitación
+                      Usa "Crear Cuenta" en esta app con el email al que te
+                      enviaron la invitación
                     </Text>
                   </View>
                 </View>
@@ -195,7 +228,8 @@ export default function SignInScreen({
                   <View style={styles.stepContent}>
                     <Text style={styles.stepTitle}>Elige tu contraseña</Text>
                     <Text style={styles.stepDescription}>
-                      Usa tu email de invitación y elige tu propia contraseña segura
+                      Usa tu email de invitación y elige tu propia contraseña
+                      segura
                     </Text>
                   </View>
                 </View>
@@ -219,7 +253,8 @@ export default function SignInScreen({
                   <View style={styles.stepContent}>
                     <Text style={styles.stepTitle}>Completa tu perfil</Text>
                     <Text style={styles.stepDescription}>
-                      El sistema detectará automáticamente tu invitación y te pedirá completar tu perfil
+                      El sistema detectará automáticamente tu invitación y te
+                      pedirá completar tu perfil
                     </Text>
                   </View>
                 </View>
@@ -228,15 +263,14 @@ export default function SignInScreen({
               <View style={styles.alertBox}>
                 <Info size={20} color="#F59E0B" />
                 <Text style={styles.alertText}>
-                  Si no recibiste el email de invitación, revisa tu carpeta de spam o contacta al administrador
+                  Si no recibiste el email de invitación, revisa tu carpeta de
+                  spam o contacta al administrador
                 </Text>
               </View>
-
             </View>
           </ScrollView>
 
           <View style={styles.modalFooter}>
-            
             <TouchableOpacity
               style={styles.gotItButton}
               onPress={() => {
@@ -351,7 +385,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textDecorationLine: 'underline',
   },
-  
+
   // Modal styles
   modalContainer: {
     flex: 1,
@@ -430,6 +464,10 @@ const styles = StyleSheet.create({
   stepContent: {
     flex: 1,
   },
+  eyeButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 16,
+  },
   stepTitle: {
     fontSize: 16,
     fontWeight: '600',
@@ -491,5 +529,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: 'white',
+  },
+  forgotPasswordButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 15,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: theme.colors.primary,
+    fontWeight: '500',
   },
 });

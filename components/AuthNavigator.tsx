@@ -7,6 +7,9 @@ import SignUpScreen from '@/screens/auth/SignUpScreen';
 import EmailConfirmationScreen from '@/screens/auth/EmailConfirmationScreen';
 import ProfileSetupScreen from '@/screens/auth/ProfileSetupScreen';
 import InvitedUserSetupScreen from '@/screens/auth/InvitedUserSetupScreen';
+import ForgotPasswordScreen from '@/screens/auth/ForgotPasswordScreen';
+import PasswordResetVerificationScreen from '@/screens/auth/PasswordResetVerificationScreen';
+import NewPasswordScreen from '@/screens/auth/NewPasswordScreen';
 import OrdersScreen from '@/screens/OrdersScreen';
 import KitchenScreen from '@/screens/KitchenScreen';
 import HistoryScreen from '@/screens/HistoryScreen';
@@ -95,8 +98,9 @@ function MainDrawer() {
 
 // Stack de autenticación
 function AuthStack() {
-  const [currentScreen, setCurrentScreen] = useState<'signin' | 'signup' | 'confirmation' | 'profile'>('signin');
-  const [confirmationEmail, setConfirmationEmail] = useState('');
+  const [currentScreen, setCurrentScreen] = useState<string>('signin');
+  const [confirmationEmail, setConfirmationEmail] = useState<string>('');
+  const [resetEmail, setResetEmail] = useState<string>('');
 
   const navigateToSignUp = () => setCurrentScreen('signup');
   const navigateToSignIn = () => setCurrentScreen('signin');
@@ -105,6 +109,15 @@ function AuthStack() {
     setCurrentScreen('confirmation');
   };
   const navigateToProfile = () => setCurrentScreen('profile');
+  
+  // Funciones para flujo de reset de contraseña
+  const navigateToForgotPassword = () => setCurrentScreen('forgot-password');
+  const navigateToPasswordVerification = (email: string) => {
+    setResetEmail(email);
+    setCurrentScreen('password-verification');
+  };
+  const navigateToNewPassword = () => setCurrentScreen('new-password');
+  const onPasswordChanged = () => setCurrentScreen('signin');
 
   switch (currentScreen) {
     case 'signup':
@@ -124,10 +137,33 @@ function AuthStack() {
       );
     case 'profile':
       return <ProfileSetupScreen />;
+    case 'forgot-password':
+      return (
+        <ForgotPasswordScreen
+          onNavigateBack={navigateToSignIn}
+          onNavigateToVerification={navigateToPasswordVerification}
+        />
+      );
+    case 'password-verification':
+      return (
+        <PasswordResetVerificationScreen
+          email={resetEmail}
+          onNavigateBack={navigateToForgotPassword}
+          onNavigateToNewPassword={navigateToNewPassword}
+        />
+      );
+    case 'new-password':
+      return (
+        <NewPasswordScreen
+          onNavigateBack={() => navigateToPasswordVerification(resetEmail)}
+          onPasswordChanged={onPasswordChanged}
+        />
+      );
     default:
       return (
         <SignInScreen 
           onNavigateToSignUp={navigateToSignUp}
+          onNavigateToForgotPassword={navigateToForgotPassword}
         />
       );
   }

@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,6 +7,12 @@ const corsHeaders = {
 
 interface InvitationRequest {
   invitation_id: string
+  email: string
+  role: string
+  business_name: string
+  admin_name: string
+  expires_at: string
+}
   email: string
   role: string
   business_name: string
@@ -42,29 +47,29 @@ serve(async (req) => {
       day: 'numeric'
     })
 
-    // NO USAR generateLink porque crea usuarios automáticamente
-    // En su lugar, enviar correo usando servicio externo
+    // NO USAR supabase.auth.admin.generateLink porque crea usuarios automáticamente
+    // En su lugar, verificar si hay servicio de email externo configurado
     const resendApiKey = Deno.env.get('RESEND_API_KEY')
     
     if (!resendApiKey) {
-      // Sin API key configurada, retornar error para usar flujo manual
+      // Sin servicio de email configurado, retornar error para usar flujo manual
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Email service not configured. Use manual invitation instructions.',
-          manual_required: true
+          error: 'Email service not configured - use manual invitation flow',
+          manual_instructions: true
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 503
+          status: 503 // Service Unavailable
         }
       )
     }
 
-    // Crear plantilla de email
+    // Crear email HTML para envío externo
     const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #333;">🎉 Invitación a ${business_name}</h2>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>🎉 Invitación a ${business_name}</h2>
         <p>Hola,</p>
         <p><strong>${admin_name}</strong> te ha invitado a unirte a <strong>${business_name}</strong> como <strong>${role}</strong>.</p>
         
@@ -74,21 +79,18 @@ serve(async (req) => {
             <li>Descarga "Expo Go" desde App Store o Google Play</li>
             <li>Abre Expo Go y busca "Order Manager"</li>
             <li>Toca "Crear Cuenta"</li>
-            <li><strong>Usa exactamente este email: ${email}</strong></li>
-            <li>Verifica tu email con el código OTP que recibirás</li>
+            <li>Usa este email: <strong>${email}</strong></li>
+            <li>Verifica tu email con el código OTP</li>
             <li>Completa tu perfil</li>
           </ol>
         </div>
         
-        <p>✨ <strong>Importante:</strong> El sistema detectará automáticamente tu invitación cuando uses este email para registrarte.</p>
+        <p>✨ El sistema detectará automáticamente tu invitación cuando uses este email para registrarte.</p>
         <p>⏰ Esta invitación expira el <strong>${expirationDate}</strong>.</p>
         <p>¡Esperamos verte pronto en el equipo! 🚀</p>
         
-        <hr style="margin: 30px 0;">
-        <p style="font-size: 12px; color: #666;">
-          ID de invitación: ${invitation_id}<br>
-          Enviado desde Order Manager
-        </p>
+        <hr>
+        <p><small>ID de invitación: ${invitation_id}</small></p>
       </div>
     `
 
@@ -100,37 +102,23 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: `${business_name} <noreply@order-manager.app>`,
+        from: 'Order Manager <noreply@yourdomain.com>',
         to: [email],
         subject: `🎉 Invitación a ${business_name} - Rol: ${role}`,
         html: emailHtml,
-        text: `Has sido invitado a ${business_name} como ${role}.
-
-Instrucciones:
-1. Descarga Expo Go desde App Store o Google Play
-2. Busca "Order Manager" 
-3. Crear cuenta con este email: ${email}
-4. Verifica tu email
-5. Completa tu perfil
-
-El sistema detectará automáticamente tu invitación.
-Expira: ${expirationDate}
-
-ID: ${invitation_id}`
       }),
     })
 
     const emailResult = await emailResponse.json()
 
     if (!emailResponse.ok) {
-      throw new Error(`Email service error: ${emailResult.message || 'Unknown error'}`)
+      throw new Error(`Failed to send email: ${emailResult.message || 'Unknown error'}`)
     }
     
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Invitation email sent successfully using external service',
-        email_id: emailResult.id
+        message: 'Invitation email sent successfully using Supabase Auth'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -143,7 +131,7 @@ ID: ${invitation_id}`
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: (error as Error).message || 'Unknown error'
+        error: error.message 
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
