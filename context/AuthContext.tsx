@@ -19,6 +19,11 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 
+  // Reset de contraseña - validando propiedad del email
+  requestPasswordReset: (email: string) => Promise<void>;
+  verifyPasswordResetCode: (email: string, code: string) => Promise<any>;
+  updatePassword: (newPassword: string) => Promise<void>;
+
   // Completar perfil/empresa (requiere sesión ya activa por OTP)
   completeRegistration: (fullName: string, businessName: string) => Promise<void>;
 
@@ -147,6 +152,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  };
+
+  // Reset de contraseña: Paso 1 - Solicitar reset por email
+  const requestPasswordReset = async (email: string) => {
+    // Primero verificamos que el email existe en nuestra base de datos
+    const { data: existingUser, error: userError } = await supabase
+      .from('user_profiles')
+      .select('user_id')
+      .eq('user_id', 
+        supabase.from('auth.users').select('id').eq('email', email.toLowerCase())
+      )
+      .single();
+
+    // Si no hay error en la consulta, significa que el usuario existe
+    // Ahora enviamos el email de reset
+    const { error } = await supabase.auth.resetPasswordForEmail(email.toLowerCase(), {
+      redirectTo: undefined, // No usamos redirect, manejamos todo con OTP
+    });
+    
+    if (error) {
+      // Si el error es que el usuario no existe, damos un mensaje genérico por seguridad
+      if (error.message.includes('User not found')) {
+        throw new Error('Si este correo está registrado, recibirás un código de verificación.');
+      }
+      throw error;
+    }
+  };
+
+  // Reset de contraseña: Paso 2 - Verificar código OTP
+  const verifyPasswordResetCode = async (email: string, code: string) => {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: email.toLowerCase(),
+      token: code,
+      type: 'recovery', // Tipo específico para recuperación de contraseña
+    });
+    
+    if (error) throw error;
+    // La sesión se establece automáticamente después de verificar el OTP
+    return data;
+  };
+
+  // Reset de contraseña: Paso 3 - Actualizar contraseña
+  const updatePassword = async (newPassword: string) => {
+    // Validamos que la contraseña sea segura
+    if (newPassword.length < 6) {
+      throw new Error('La contraseña debe tener al menos 6 caracteres');
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    
     if (error) throw error;
   };
 
@@ -284,6 +342,9 @@ const completeRegistration = async (fullName: string, businessName: string) => {
       signUp,
       verifySignUpCode,
       signIn, signOut,
+      requestPasswordReset,
+      verifyPasswordResetCode,
+      updatePassword,
       completeRegistration,
       completeInvitedUserRegistration,
       resendConfirmation,

@@ -7,7 +7,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  console.log('🚀 Enviando email REAL con signInWithOtp')
+  console.log('🚀 Enviando email usando inviteUserByEmail')
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
