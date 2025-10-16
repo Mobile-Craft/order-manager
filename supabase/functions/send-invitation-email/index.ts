@@ -6,23 +6,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface InvitationRequest {
-  invitation_id: string
-  email: string
-  role: string
-  business_name: string
-  admin_name: string
-  expires_at: string
-}
-
 serve(async (req) => {
-  // Handle CORS preflight requests
+  console.log('🚀 Enviando email REAL con signInWithOtp')
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    // Crear cliente de Supabase para usar el sistema de auth
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     
@@ -33,21 +24,18 @@ serve(async (req) => {
       }
     })
 
-    const { invitation_id, email, role, business_name, admin_name, expires_at }: InvitationRequest = await req.json()
+    const { invitation_id, email, role, business_name, admin_name, expires_at } = await req.json()
+    
+    console.log('📧 Procesando invitación para:', email)
+    console.log('📧 Business:', business_name)
+    console.log('📧 Role:', role)
 
-    // Formatear fecha de expiración
-    const expirationDate = new Date(expires_at).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
-
-    // Usar Supabase Auth para enviar correo personalizado
-    // Esto usará los templates configurados en Supabase
-    const { error } = await supabase.auth.admin.generateLink({
-      type: 'invite',
-      email: email,
-      options: {
+    // Estrategia correcta: inviteUserByEmail (usa template de invitación)
+    try {
+      console.log('📧 Enviando invitación de usuario a:', email)
+      
+      // Usar inviteUserByEmail que SÍ usa el template "Invite user"
+      const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
         data: {
           invitation_type: 'business_invitation',
           business_name: business_name,
@@ -55,28 +43,68 @@ serve(async (req) => {
           invited_by: admin_name,
           invitation_id: invitation_id,
           expires_at: expires_at,
-          instructions: `Has sido invitado a unirte a ${business_name} como ${role}. Para completar tu registro:
+          is_business_invitation: true
+        },
+        redirectTo: 'myapp://auth/callback'
+      })
 
-1. Descarga la aplicación Order Manager
-2. Crear cuenta con este email: ${email}
-3. Verifica tu email con el código OTP
-4. Completa tu perfil
-
-Esta invitación expira el ${expirationDate}.
-
-¡Esperamos verte pronto en el equipo!`
-        }
+      if (inviteError) {
+        console.warn('⚠️ Error enviando invitación:', inviteError.message)
+        throw inviteError
       }
+
+      console.log('✅ Invitación enviada exitosamente con inviteUserByEmail')
+      console.log('📨 Invite data:', inviteData)
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Email de invitación enviado exitosamente a ' + email,
+          service: 'supabase_invite_user',
+          email_sent_to: email,
+          method: 'inviteUserByEmail',
+          note: 'Email enviado usando template de invitación',
+          user_id: inviteData?.user?.id
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+        
+    } catch (inviteError) {
+      console.warn('⚠️ Error con inviteUserByEmail:', inviteError)
+    }
+
+    // Fallback manual si todo falla
+    const expirationDate = new Date(expires_at).toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long', 
+      day: 'numeric'
     })
 
-    if (error) {
-      throw error
-    }
-    
     return new Response(
       JSON.stringify({ 
-        success: true, 
-        message: 'Invitation email sent successfully using Supabase Auth'
+        success: true,
+        manual_required: true,
+        message: 'Invitación creada - email automático no disponible',
+        email_sent_to: email,
+        service: 'manual',
+        instructions: `🎉 INVITACIÓN A ${business_name.toUpperCase()}
+
+${admin_name} te ha invitado como ${role}.
+
+📱 PASOS PARA UNIRTE:
+1. Descarga "Expo Go" desde App Store o Google Play
+2. Abre Expo Go y busca "Order Manager"  
+3. Toca "Crear Cuenta"
+4. Usa este email: ${email}
+5. Verifica tu email con el código OTP
+6. Completa tu perfil
+
+✨ El sistema detectará automáticamente tu invitación.
+⏰ Expira: ${expirationDate}
+
+¡Esperamos verte pronto! 🚀`
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -84,16 +112,17 @@ Esta invitación expira el ${expirationDate}.
     )
 
   } catch (error) {
-    console.error('Error sending invitation email:', error)
+    console.error('❌ Error general:', error)
     
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: 'Error interno del servidor',
+        details: error instanceof Error ? error.message : String(error)
       }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     )
   }

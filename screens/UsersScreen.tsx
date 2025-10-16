@@ -225,64 +225,39 @@ export default function UsersScreen() {
       
       console.log('✅ Invitación insertada correctamente:', insertedData);
 
-      // Usar el sistema nativo de Supabase para enviar correo
-      console.log('📧 Enviando correo de invitación...');
+      // Usar función edge para enviar correo de invitación
+      console.log('📧 Enviando correo de invitación con función edge...');
+      let emailSent = false;
+      
       try {
-        const { error: emailError } = await supabase.auth.signInWithOtp({
-          email: inviteEmail.trim().toLowerCase(),
-          options: {
-            shouldCreateUser: false,
-            emailRedirectTo: 'https://order-manager.com/invitation-accepted', // URL simple
-            data: {
-              type: 'business_invitation',
-              business_name: user?.business?.name || 'Order Manager',
-              business_id: user?.business?.id,
-              role: inviteRole,
-              invited_by_name: user?.profile?.full_name || user?.email?.split('@')[0] || 'Administrador',
-              invited_by_email: user?.email || '',
-              message: `Has sido invitado a unirte a ${user?.business?.name || 'Order Manager'} como ${inviteRole}. 
-
-Para completar tu registro:
-
-1. Descarga Expo Go desde tu tienda de aplicaciones
-2. Abre Expo Go y busca "Order Manager"
-3. Toca "Crear Cuenta" 
-4. Usa este email: ${inviteEmail}
-5. Verifica tu email con el código OTP
-6. Completa tu perfil
-
-¡El sistema detectará automáticamente tu invitación!
-
-Esta invitación expira en 7 días.
-
-¡Esperamos verte pronto en el equipo!
-
-Saludos,
-${user?.profile?.full_name || user?.email?.split('@')[0] || 'El equipo de ' + (user?.business?.name || 'Order Manager')}`
-            }
-          }
+        const response = await supabase.functions.invoke('send-invitation-email', {
+          body: {
+            invitation_id: insertedData[0].id,
+            email: inviteEmail,
+            role: inviteRole,
+            business_name: user?.business?.name || 'Order Manager',
+            admin_name: user?.profile?.full_name || 'Administrador',
+            expires_at: insertedData[0].expires_at,
+          },
         });
 
-        if (emailError) {
-          console.warn('⚠️ No se pudo enviar correo automático:', emailError);
-          // No hacer throw porque la invitación ya está creada
-        } else {
-          console.log('✅ Correo de invitación enviado exitosamente');
+        if (response.error) {
+          throw response.error;
         }
-      } catch (emailError) {
-        console.warn('⚠️ Error en el envío de correo:', emailError);
+
+        console.log('✅ Email enviado exitosamente');
+        emailSent = true;
+      } catch (error) {
+        console.error('⚠️ No se pudo enviar correo automático:', error);
+        emailSent = false;
       }
 
       Alert.alert(
-        'Invitación Enviada',
+        emailSent ? 'Invitación Enviada' : 'Invitación Creada',
         `✅ Se ha creado la invitación para ${inviteEmail} como ${inviteRole}.\n\n` +
-        `📧 Se ha enviado un correo con las instrucciones de registro.\n\n` +
-        `El correo incluye:\n` +
-        `• Link directo a la aplicación\n` +
-        `• Instrucciones paso a paso\n` +
-        `• Información del negocio y rol\n` +
-        `• Fecha de expiración (7 días)\n\n` +
-        `Si ${inviteEmail} no recibe el correo, revisa la carpeta de spam o reenvía la invitación.`,
+        (emailSent 
+          ? `📧 Se ha enviado un correo con las instrucciones de registro.\n\nEl correo incluye:\n• Link directo a la aplicación\n• Instrucciones paso a paso\n• Información del negocio y rol\n• Fecha de expiración (7 días)\n\nSi ${inviteEmail} no recibe el correo, revisa la carpeta de spam.`
+          : `⚠️ No se pudo enviar el correo automáticamente.\n\nPor favor, comparte manualmente las instrucciones para que se registre con el email: ${inviteEmail}`),
         [{ text: 'OK' }]
       );
 
